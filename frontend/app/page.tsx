@@ -19,7 +19,7 @@ type Event = {
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   const days = ["日", "月", "火", "水", "木", "金", "土"];
-  return `${d.getMonth() + 1}月${d.getDate()}日（${days[d.getDay()]}）`;
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${days[d.getDay()]}）`;
 }
 
 function genreColor(genre: string | null): string {
@@ -102,11 +102,6 @@ export default function Home() {
                         {event.venue}
                       </p>
                     )}
-                    {event.target_vehicle && (
-                      <p className="text-xs text-zinc-400 mt-0.5">
-                        対象：{event.target_vehicle}
-                      </p>
-                    )}
                     {/* 情報ソース */}
                     {event.source_site && (
                       <p className="text-xs text-zinc-300 mt-1.5">
@@ -129,9 +124,9 @@ export default function Home() {
 
                   {/* 右：バッジ＋リンク */}
                   <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                    {event.genre && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${genreColor(event.genre)}`}>
-                        {event.genre}
+                    {event.target_vehicle && (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
+                        {event.target_vehicle}
                       </span>
                     )}
                     {event.source_url && (
