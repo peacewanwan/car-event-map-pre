@@ -110,7 +110,8 @@ def fetch_generic(url):
         soup = BeautifulSoup(res.text, "html.parser")
         for tag in soup(["script", "style", "nav", "footer", "header"]):
             tag.decompose()
-        return soup.get_text(separator="\n", strip=True)[:5000], []
+        text = soup.get_text(separator="\n", strip=True)
+        return (text or "")[:4000], []
     except Exception as e:
         print(f"  [ERROR] スクレイピング失敗: {url} - {e}")
         return "", []
@@ -139,8 +140,8 @@ def fetch_dupcar(url):
 
         for tag in soup(["script", "style", "nav", "footer", "header"]):
             tag.decompose()
-        text = soup.get_text(separator="\n", strip=True)[:5000]
-        return text, events
+        text = soup.get_text(separator="\n", strip=True)
+        return (text or "")[:4000], events
 
     except Exception as e:
         print(f"  [ERROR] dupcarスクレイピング失敗: {url} - {e}")
@@ -161,19 +162,19 @@ def fetch_minkara(url):
                 title_dt = li.find("dt", class_="eventTtl")
                 link_tag = title_dt.find("a") if title_dt else None
                 if link_tag:
-                    href = link_tag.get("href", "")
+                    href = link_tag.get("href") or ""
                     # 相対URLを絶対URLに変換
                     if href.startswith("/"):
                         href = "https://minkara.carview.co.jp" + href
                     events.append({
                         "name": link_tag.get_text(strip=True),
-                        "source_url": href,
+                        "source_url": href or None,
                     })
 
         for tag in soup(["script", "style", "nav", "footer", "header"]):
             tag.decompose()
-        text = soup.get_text(separator="\n", strip=True)[:5000]
-        return text, events
+        text = soup.get_text(separator="\n", strip=True)
+        return (text or "")[:4000], events
 
     except Exception as e:
         print(f"  [ERROR] みんカラスクレイピング失敗: {url} - {e}")
@@ -195,12 +196,15 @@ def normalize(text, site_name, site_url, prefetched_events=None):
     try:
         message = anthropic.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=1000,
+            max_tokens=4096,
             messages=[{"role": "user", "content": NORMALIZE_PROMPT.format(text=text)}]
         )
         raw = message.content[0].text.strip()
         start = raw.find("[")
         end = raw.rfind("]") + 1
+        if start == -1 or end <= 0:
+            print(f"  [WARN] JSONが見つかりません: {site_name}")
+            return []
         events = json.loads(raw[start:end])
 
         if prefetched_events:
@@ -223,8 +227,8 @@ def normalize(text, site_name, site_url, prefetched_events=None):
                 event["source_url"] = site_url
             if not event.get("target_vehicle"):
                 event["target_vehicle"] = guess_vehicle(
-                    event.get("name", ""),
-                    event.get("description", "")
+                    event.get("name") or "",
+                    event.get("description") or ""
                 )
 
         return events
