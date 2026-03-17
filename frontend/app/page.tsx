@@ -57,7 +57,8 @@ export default function Home() {
         .from("events")
         .select("*")
         .gte("event_date", today)
-        .order("event_date", { ascending: true });
+        .order("event_date", { ascending: true })
+        .limit(10000);
       const loaded = data || [];
       setAllEvents(loaded);
       setEvents(loaded);
