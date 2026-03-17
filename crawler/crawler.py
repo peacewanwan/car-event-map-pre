@@ -243,9 +243,7 @@ def save_events(events):
     skipped = 0
 
     for event in events:
-        print(f"  [DEBUG] イベント: name={event.get('name')!r} event_date={event.get('event_date')!r} prefecture={event.get('prefecture')!r} venue={event.get('venue')!r} source_url={event.get('source_url')!r}")
         if not event.get("name") or not event.get("event_date"):
-            print(f"  [DEBUG] → スキップ理由: name={bool(event.get('name'))} event_date={bool(event.get('event_date'))}")
             skipped += 1
             continue
 
@@ -280,7 +278,6 @@ def save_events(events):
                     supabase.table("events").update(new_data).eq("id", old["id"]).execute()
                     updated += 1
                 else:
-                    print(f"  [DEBUG] → スキップ理由: 既存レコードと差分なし (id={old['id']})")
                     skipped += 1
             else:
                 supabase.table("events").insert(new_data).execute()
