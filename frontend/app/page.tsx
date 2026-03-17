@@ -16,6 +16,15 @@ type Event = {
   source_site_url: string | null;
 };
 
+type Filters = {
+  vehicle: string;
+  prefecture: string;
+  dateFrom: string;
+  dateTo: string;
+};
+
+const EMPTY_FILTERS: Filters = { vehicle: "", prefecture: "", dateFrom: "", dateTo: "" };
+
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   const days = ["日", "月", "火", "水", "木", "金", "土"];
@@ -34,8 +43,12 @@ function genreColor(genre: string | null): string {
 }
 
 export default function Home() {
+  const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [prefectures, setPrefectures] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState<Filters>(EMPTY_FILTERS);
+  const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
 
   useEffect(() => {
     async function load() {
@@ -45,11 +58,51 @@ export default function Home() {
         .select("*")
         .gte("event_date", today)
         .order("event_date", { ascending: true });
-      setEvents(data || []);
+      const loaded = data || [];
+      setAllEvents(loaded);
+      setEvents(loaded);
+
+      const prefs = Array.from(
+        new Set(loaded.map((e) => e.prefecture).filter(Boolean) as string[])
+      ).sort();
+      setPrefectures(prefs);
+
       setLoading(false);
     }
     load();
   }, []);
+
+  useEffect(() => {
+    let result = allEvents;
+    if (applied.vehicle) {
+      const kw = applied.vehicle.toLowerCase();
+      result = result.filter((e) =>
+        e.target_vehicle?.toLowerCase().includes(kw)
+      );
+    }
+    if (applied.prefecture) {
+      result = result.filter((e) => e.prefecture === applied.prefecture);
+    }
+    if (applied.dateFrom) {
+      result = result.filter((e) => e.event_date >= applied.dateFrom);
+    }
+    if (applied.dateTo) {
+      result = result.filter((e) => e.event_date <= applied.dateTo);
+    }
+    setEvents(result);
+  }, [applied, allEvents]);
+
+  function handleSearch() {
+    setApplied({ ...form });
+  }
+
+  function handleReset() {
+    setForm(EMPTY_FILTERS);
+    setApplied(EMPTY_FILTERS);
+  }
+
+  const isFiltered =
+    applied.vehicle || applied.prefecture || applied.dateFrom || applied.dateTo;
 
   return (
     <div className="min-h-screen bg-zinc-50">
@@ -64,13 +117,82 @@ export default function Home() {
             <p className="text-xs text-zinc-400 mt-0.5">全国の車イベント情報</p>
           </div>
           <span className="text-xs text-zinc-400">
-            {loading ? "読込中..." : `${events.length}件`}
+            {loading ? "読込中..." : `${events.length}件${isFiltered ? "（絞込中）" : ""}`}
           </span>
         </div>
       </header>
 
-      {/* リスト */}
-      <main className="max-w-2xl mx-auto px-4 py-4">
+      <main className="max-w-2xl mx-auto px-4 py-4 space-y-4">
+
+        {/* フィルターフォーム */}
+        <div className="bg-white rounded-xl border border-zinc-200 px-4 py-4 space-y-3">
+          {/* 車種 */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-600 mb-1">車種</label>
+            <input
+              type="text"
+              placeholder="例：スカイライン、旧車"
+              value={form.vehicle}
+              onChange={(e) => setForm((f) => ({ ...f, vehicle: e.target.value }))}
+              className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300"
+            />
+          </div>
+
+          {/* エリア */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-600 mb-1">エリア</label>
+            <select
+              value={form.prefecture}
+              onChange={(e) => setForm((f) => ({ ...f, prefecture: e.target.value }))}
+              className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
+            >
+              <option value="">すべて</option>
+              {prefectures.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 日付範囲 */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-medium text-zinc-600 mb-1">開始日</label>
+              <input
+                type="date"
+                value={form.dateFrom}
+                onChange={(e) => setForm((f) => ({ ...f, dateFrom: e.target.value }))}
+                className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-zinc-600 mb-1">終了日</label>
+              <input
+                type="date"
+                value={form.dateTo}
+                onChange={(e) => setForm((f) => ({ ...f, dateTo: e.target.value }))}
+                className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300"
+              />
+            </div>
+          </div>
+
+          {/* ボタン */}
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={handleSearch}
+              className="flex-1 bg-zinc-900 text-white text-sm font-medium rounded-lg py-2 hover:bg-zinc-700 transition-colors"
+            >
+              検索
+            </button>
+            <button
+              onClick={handleReset}
+              className="px-4 text-sm text-zinc-500 border border-zinc-200 rounded-lg py-2 hover:bg-zinc-50 transition-colors"
+            >
+              リセット
+            </button>
+          </div>
+        </div>
+
+        {/* リスト */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
