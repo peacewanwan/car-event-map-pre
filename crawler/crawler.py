@@ -106,8 +106,8 @@ def fetch_generic(url):
     try:
         res = requests.get(url, headers=HEADERS, timeout=15)
         res.raise_for_status()
-        res.encoding = res.apparent_encoding
-        soup = BeautifulSoup(res.text, "html.parser")
+        # apparent_encodingは誤検出が多いため、BS4にrawバイトを渡してmeta charsetから自動検出させる
+        soup = BeautifulSoup(res.content, "html.parser")
         for tag in soup(["script", "style", "nav", "footer", "header"]):
             tag.decompose()
         text = soup.get_text(separator="\n", strip=True)
@@ -121,8 +121,7 @@ def fetch_dupcar(url):
     try:
         res = requests.get(url, headers=HEADERS, timeout=15)
         res.raise_for_status()
-        res.encoding = res.apparent_encoding
-        soup = BeautifulSoup(res.text, "html.parser")
+        soup = BeautifulSoup(res.content, "html.parser")
 
         events = []
         table = soup.find("table", id="list_all")
@@ -152,8 +151,7 @@ def fetch_minkara(url):
     try:
         res = requests.get(url, headers=HEADERS, timeout=15)
         res.raise_for_status()
-        res.encoding = res.apparent_encoding
-        soup = BeautifulSoup(res.text, "html.parser")
+        soup = BeautifulSoup(res.content, "html.parser")
 
         events = []
         calendar_list = soup.find("ul", class_="calendar-list")
@@ -180,11 +178,31 @@ def fetch_minkara(url):
         print(f"  [ERROR] みんカラスクレイピング失敗: {url} - {e}")
         return "", []
 
+def fetch_suzuka(url):
+    """鈴鹿サーキット専用 - Calendar_Contents div を直接抽出"""
+    try:
+        res = requests.get(url, headers=HEADERS, timeout=15)
+        res.raise_for_status()
+        soup = BeautifulSoup(res.content, "html.parser")
+        cal = soup.find("div", class_="Calendar_Contents")
+        if cal:
+            text = cal.get_text(separator="\n", strip=True)
+        else:
+            for tag in soup(["script", "style", "nav", "footer", "header"]):
+                tag.decompose()
+            text = soup.get_text(separator="\n", strip=True)
+        return (text or "")[:4000], []
+    except Exception as e:
+        print(f"  [ERROR] 鈴鹿スクレイピング失敗: {url} - {e}")
+        return "", []
+
 def fetch_site(url, crawl_type):
     if crawl_type == "dupcar":
         return fetch_dupcar(url)
     elif crawl_type == "minkara":
         return fetch_minkara(url)
+    elif crawl_type == "suzuka":
+        return fetch_suzuka(url)
     else:
         return fetch_generic(url)
 
