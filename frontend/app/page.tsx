@@ -248,13 +248,13 @@ export default function Home() {
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={handleSearch}
-                  className="flex-1 bg-zinc-900 text-white text-sm font-medium rounded-lg py-2 hover:bg-zinc-700 transition-colors"
+                  className="flex-1 bg-blue-600 text-white text-sm font-medium rounded-lg py-2 hover:bg-blue-700 transition-colors"
                 >
                   検索
                 </button>
                 <button
                   onClick={handleReset}
-                  className="px-4 text-sm text-zinc-500 border border-zinc-200 rounded-lg py-2 hover:bg-zinc-50 transition-colors"
+                  className="px-4 text-sm text-gray-600 border border-gray-300 rounded-lg py-2 hover:bg-gray-50 transition-colors"
                 >
                   リセット
                 </button>
@@ -279,13 +279,13 @@ export default function Home() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-zinc-900 leading-snug truncate">
+                        <p className="text-base font-bold text-gray-900 leading-snug truncate">
                           {event.name}
                         </p>
-                        <p className="text-xs font-medium text-gray-800 mt-1">
+                        <p className="text-xs font-medium text-blue-600 mt-1">
                           {formatDate(event.event_date)}
                           {event.prefecture && (
-                            <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                            <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-500 text-white">
                               {event.prefecture}
                             </span>
                           )}
@@ -315,7 +315,7 @@ export default function Home() {
                       </div>
                       <div className="flex flex-col items-end gap-2 flex-shrink-0">
                         {event.target_vehicle && (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-500 text-white">
                             {event.target_vehicle}
                           </span>
                         )}
