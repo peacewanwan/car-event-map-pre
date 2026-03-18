@@ -80,6 +80,7 @@ export default function Home() {
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [prefectures, setPrefectures] = useState<string[]>([]);
+  const [vehicles, setVehicles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
@@ -106,6 +107,11 @@ export default function Home() {
       ).sort();
       setPrefectures(prefs);
 
+      const vehs = Array.from(
+        new Set(loaded.map((e) => e.target_vehicle).filter(Boolean) as string[])
+      ).sort();
+      setVehicles(vehs);
+
       setLoading(false);
     }
     load();
@@ -126,10 +132,7 @@ export default function Home() {
   useEffect(() => {
     let result = allEvents;
     if (applied.vehicle) {
-      const kw = applied.vehicle.toLowerCase();
-      result = result.filter((e) =>
-        e.target_vehicle?.toLowerCase().includes(kw)
-      );
+      result = result.filter((e) => e.target_vehicle === applied.vehicle);
     }
     if (applied.prefecture) {
       result = result.filter((e) => e.prefecture === applied.prefecture);
@@ -201,13 +204,16 @@ export default function Home() {
             <div className="bg-white rounded-xl border border-zinc-200 px-4 py-4 space-y-3">
               <div>
                 <label className="block text-xs font-medium text-zinc-600 mb-1">車種</label>
-                <input
-                  type="text"
-                  placeholder="例：スカイライン、旧車"
+                <select
                   value={form.vehicle}
                   onChange={(e) => setForm((f) => ({ ...f, vehicle: e.target.value }))}
-                  className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300"
-                />
+                  className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
+                >
+                  <option value="">すべて</option>
+                  {vehicles.map((v) => (
+                    <option key={v} value={v}>{v}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
