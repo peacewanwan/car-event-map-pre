@@ -107,14 +107,22 @@ export default function Home() {
       ).sort();
       setPrefectures(prefs);
 
-      const vehs = Array.from(
-        new Set(loaded.map((e) => e.target_vehicle).filter(Boolean) as string[])
-      ).sort();
-      setVehicles(vehs);
 
       setLoading(false);
     }
     load();
+  }, []);
+
+  useEffect(() => {
+    async function loadVehicles() {
+      const { data } = await supabase
+        .from("events")
+        .select("target_vehicle")
+        .not("target_vehicle", "is", null);
+      const vehs = [...new Set((data || []).map((d) => d.target_vehicle as string))].sort();
+      setVehicles(vehs);
+    }
+    loadVehicles();
   }, []);
 
   useEffect(() => {
