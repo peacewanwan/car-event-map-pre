@@ -226,10 +226,10 @@ export default function Home() {
                   className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
                 >
                   <option value="">すべて</option>
+                  <option value="__null__">エリア情報なし</option>
                   {prefectures.map((p) => (
                     <option key={p} value={p}>{p}</option>
                   ))}
-                  <option value="__null__">エリア情報なし</option>
                 </select>
               </div>
 
