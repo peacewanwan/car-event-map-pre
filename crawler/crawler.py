@@ -286,11 +286,19 @@ def save_events(events):
             continue
 
         try:
-            existing = supabase.table("events").select(
-                "id, name, genre, target_vehicle, source_url"
-            ).eq("event_date", event["event_date"]).eq(
-                "venue", event.get("venue", "")
-            ).execute()
+            venue = event.get("venue")
+            if venue:
+                existing = supabase.table("events").select(
+                    "id, name, genre, target_vehicle, source_url"
+                ).eq("event_date", event["event_date"]).eq(
+                    "venue", venue
+                ).execute()
+            else:
+                existing = supabase.table("events").select(
+                    "id, name, genre, target_vehicle, source_url"
+                ).eq("event_date", event["event_date"]).is_(
+                    "venue", "null"
+                ).eq("source_url", event.get("source_url", "")).execute()
 
             new_data = {
                 "name":             event.get("name"),
