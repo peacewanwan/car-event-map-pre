@@ -134,7 +134,9 @@ export default function Home() {
     if (applied.vehicle) {
       result = result.filter((e) => e.target_vehicle?.trim() === applied.vehicle.trim());
     }
-    if (applied.prefecture) {
+    if (applied.prefecture === "__null__") {
+      result = result.filter((e) => e.prefecture === null);
+    } else if (applied.prefecture) {
       result = result.filter((e) => e.prefecture === applied.prefecture);
     }
     if (applied.dateFrom) {
@@ -227,6 +229,7 @@ export default function Home() {
                   {prefectures.map((p) => (
                     <option key={p} value={p}>{p}</option>
                   ))}
+                  <option value="__null__">エリア情報なし</option>
                 </select>
               </div>
 
