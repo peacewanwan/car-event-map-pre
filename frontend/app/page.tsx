@@ -10,6 +10,7 @@ type Event = {
   prefecture: string | null;
   venue: string | null;
   genre: string | null;
+  category: string | null;
   target_vehicle: string | null;
   source_url: string | null;
   source_site: string | null;
@@ -32,11 +33,35 @@ type RecurringEvent = {
 type Filters = {
   vehicle: string;
   prefecture: string;
+  category: string;
   dateFrom: string;
   dateTo: string;
 };
 
-const EMPTY_FILTERS: Filters = { vehicle: "", prefecture: "", dateFrom: "", dateTo: "" };
+const EMPTY_FILTERS: Filters = { vehicle: "", prefecture: "", category: "", dateFrom: "", dateTo: "" };
+
+const CATEGORY_OPTIONS: { value: string; label: string }[] = [
+  { value: "meeting", label: "オフ会・ミーティング" },
+  { value: "track",   label: "走行会" },
+  { value: "touring", label: "ツーリング" },
+  { value: "show",    label: "展示・ショー" },
+  { value: "regular", label: "定例MTG" },
+];
+
+function categoryBadgeClass(category: string | null): string {
+  switch (category) {
+    case "meeting": return "bg-purple-100 text-purple-700";
+    case "track":   return "bg-red-100 text-red-700";
+    case "show":    return "bg-yellow-100 text-yellow-700";
+    case "touring": return "bg-teal-100 text-teal-700";
+    case "regular": return "bg-gray-100 text-gray-600";
+    default:        return "";
+  }
+}
+
+function categoryLabel(category: string | null): string {
+  return CATEGORY_OPTIONS.find((o) => o.value === category)?.label ?? "";
+}
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -81,6 +106,7 @@ export default function Home() {
   const [events, setEvents] = useState<Event[]>([]);
   const [prefectures, setPrefectures] = useState<string[]>([]);
   const [vehicles, setVehicles] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
@@ -112,6 +138,11 @@ export default function Home() {
       ).sort();
       setVehicles(vehs);
 
+      const cats = CATEGORY_OPTIONS
+        .map((o) => o.value)
+        .filter((v) => loaded.some((e) => e.category === v));
+      setCategories(cats);
+
       setLoading(false);
     }
     load();
@@ -139,6 +170,9 @@ export default function Home() {
     } else if (applied.prefecture) {
       result = result.filter((e) => e.prefecture === applied.prefecture);
     }
+    if (applied.category) {
+      result = result.filter((e) => e.category === applied.category);
+    }
     if (applied.dateFrom) {
       result = result.filter((e) => e.event_date >= applied.dateFrom);
     }
@@ -158,7 +192,7 @@ export default function Home() {
   }
 
   const isFiltered =
-    applied.vehicle || applied.prefecture || applied.dateFrom || applied.dateTo;
+    applied.vehicle || applied.prefecture || applied.category || applied.dateFrom || applied.dateTo;
 
   return (
     <div className="min-h-screen bg-zinc-50">
@@ -232,6 +266,22 @@ export default function Home() {
                   ))}
                 </select>
               </div>
+
+              {categories.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">カテゴリ</label>
+                  <select
+                    value={form.category}
+                    onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                    className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
+                  >
+                    <option value="">すべて</option>
+                    {categories.map((c) => (
+                      <option key={c} value={c}>{categoryLabel(c)}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -326,6 +376,11 @@ export default function Home() {
                         {event.target_vehicle && (
                           <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-500 text-white">
                             {event.target_vehicle}
+                          </span>
+                        )}
+                        {event.category && event.category !== "unknown" && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${categoryBadgeClass(event.category)}`}>
+                            {categoryLabel(event.category)}
                           </span>
                         )}
                         {event.source_url && (
