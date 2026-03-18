@@ -57,10 +57,19 @@ function genreColor(genre: string | null): string {
 
 function formatFrequency(freq: string | null): string {
   switch (freq) {
-    case "weekly":   return "毎週";
-    case "monthly":  return "毎月";
+    case "weekly":    return "毎週";
+    case "monthly":   return "毎月";
     case "irregular": return "不定期";
     default: return freq ?? "";
+  }
+}
+
+function frequencyBadgeClass(freq: string | null): string {
+  switch (freq) {
+    case "weekly":    return "bg-blue-100 text-blue-700";
+    case "monthly":   return "bg-blue-50 text-blue-600";
+    case "irregular": return "bg-gray-100 text-gray-500";
+    default:          return "bg-gray-100 text-gray-500";
   }
 }
 
@@ -166,15 +175,15 @@ export default function Home() {
         </div>
 
         {/* タブ */}
-        <div className="max-w-2xl mx-auto px-4 flex gap-0 border-t border-zinc-100">
+        <div className="max-w-2xl mx-auto px-4 pb-3 border-t border-zinc-100 pt-2 flex gap-2">
           {(["events", "recurring"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
                 tab === t
-                  ? "border-zinc-900 text-zinc-900"
-                  : "border-transparent text-zinc-400 hover:text-zinc-600"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
               }`}
             >
               {t === "events" ? "イベント一覧" : "定期開催"}
@@ -273,9 +282,13 @@ export default function Home() {
                         <p className="text-sm font-medium text-zinc-900 leading-snug truncate">
                           {event.name}
                         </p>
-                        <p className="text-xs text-zinc-500 mt-1">
+                        <p className="text-xs font-medium text-gray-800 mt-1">
                           {formatDate(event.event_date)}
-                          {event.prefecture && ` · ${event.prefecture}`}
+                          {event.prefecture && (
+                            <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                              {event.prefecture}
+                            </span>
+                          )}
                         </p>
                         {event.venue && (
                           <p className="text-xs text-zinc-400 mt-0.5 truncate">
@@ -283,14 +296,14 @@ export default function Home() {
                           </p>
                         )}
                         {event.source_site && (
-                          <p className="text-xs text-zinc-300 mt-1.5">
+                          <p className="text-xs text-gray-400 mt-1.5">
                             情報元：
                             {event.source_site_url ? (
                               <a
                                 href={event.source_site_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="hover:text-zinc-400 underline underline-offset-2"
+                                className="hover:text-gray-500 underline underline-offset-2"
                               >
                                 {event.source_site}
                               </a>
@@ -302,7 +315,7 @@ export default function Home() {
                       </div>
                       <div className="flex flex-col items-end gap-2 flex-shrink-0">
                         {event.target_vehicle && (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">
                             {event.target_vehicle}
                           </span>
                         )}
@@ -341,15 +354,15 @@ export default function Home() {
                 {recurringEvents.map((ev) => (
                   <li
                     key={ev.id}
-                    className="bg-white rounded-xl border border-zinc-200 px-4 py-4"
+                    className="bg-white rounded-xl border border-zinc-200 border-l-4 border-l-blue-400 px-4 py-4"
                   >
                     {/* イベント名 + 頻度バッジ */}
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <p className="text-sm font-semibold text-zinc-900 leading-snug">
+                      <p className="text-sm font-semibold text-blue-800 leading-snug">
                         {ev.name}
                       </p>
                       {ev.frequency && (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-700 flex-shrink-0">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${frequencyBadgeClass(ev.frequency)}`}>
                           {formatFrequency(ev.frequency)}
                         </span>
                       )}
@@ -379,7 +392,7 @@ export default function Home() {
                     {/* 対象車種 + リンク */}
                     <div className="flex items-center justify-between gap-2 mt-1">
                       {ev.target_vehicle ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">
                           {ev.target_vehicle}
                         </span>
                       ) : (
