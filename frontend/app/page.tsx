@@ -338,9 +338,16 @@ export default function Home() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-base font-bold text-gray-900 leading-snug truncate">
-                          {event.name}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-base font-bold text-gray-900 leading-snug truncate">
+                            {event.name}
+                          </p>
+                          {event.category && event.category !== "unknown" && (
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${categoryBadgeClass(event.category)}`}>
+                              {categoryLabel(event.category)}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs font-medium text-blue-600 mt-1">
                           {formatDate(event.event_date)}
                           {event.prefecture && (
@@ -376,11 +383,6 @@ export default function Home() {
                         {event.target_vehicle && (
                           <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-500 text-white">
                             {event.target_vehicle}
-                          </span>
-                        )}
-                        {event.category && event.category !== "unknown" && (
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${categoryBadgeClass(event.category)}`}>
-                            {categoryLabel(event.category)}
                           </span>
                         )}
                         {event.source_url && (
