@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type Event = {
@@ -196,6 +196,30 @@ export default function Home() {
     setEvents(result);
     setDisplayCount(30);
   }, [applied, allEvents, freeword]);
+
+  // 検索ログ送信（500ms debounce）
+  const logTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (logTimerRef.current) clearTimeout(logTimerRef.current);
+    logTimerRef.current = setTimeout(async () => {
+      const hasFilter =
+        freeword.trim() || applied.vehicle || applied.prefecture ||
+        applied.category || applied.dateFrom || applied.dateTo;
+      if (!hasFilter) return;
+      try {
+        await supabase.from("search_logs").insert({
+          freeword:     freeword.trim() || null,
+          vehicle:      applied.vehicle || null,
+          prefecture:   applied.prefecture || null,
+          category:     applied.category || null,
+          date_from:    applied.dateFrom || null,
+          date_to:      applied.dateTo || null,
+          result_count: events.length,
+        });
+      } catch (_) {}
+    }, 500);
+    return () => { if (logTimerRef.current) clearTimeout(logTimerRef.current); };
+  }, [freeword, applied, events.length]);
 
   function handleSearch() {
     setApplied({ ...form });
