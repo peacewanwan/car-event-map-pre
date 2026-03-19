@@ -248,6 +248,41 @@ export default function Home() {
   const isFiltered =
     applied.vehicle || applied.prefecture || applied.category || applied.dateFrom || applied.dateTo;
 
+  // 投稿モーダル
+  const [modalOpen, setModalOpen] = useState(false);
+  const [submitText, setSubmitText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState<"" | "success" | "error">("");
+  const [submitError, setSubmitError] = useState("");
+
+  async function handleSubmit() {
+    if (!submitText.trim()) return;
+    setSubmitting(true);
+    setSubmitResult("");
+    setSubmitError("");
+    try {
+      const res = await fetch("/api/submit-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: submitText }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setSubmitResult("success");
+        setSubmitText("");
+        setTimeout(() => { setModalOpen(false); setSubmitResult(""); }, 2000);
+      } else {
+        setSubmitResult("error");
+        setSubmitError(json.message ?? "登録できませんでした");
+      }
+    } catch {
+      setSubmitResult("error");
+      setSubmitError("通信エラーが発生しました");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50">
 
@@ -260,7 +295,14 @@ export default function Home() {
             </h1>
             <p className="text-xs text-zinc-400 mt-0.5">全国の車イベント情報</p>
           </div>
-          <div className="text-right">
+          <div className="flex items-start gap-3">
+            <button
+              onClick={() => { setModalOpen(true); setSubmitResult(""); setSubmitError(""); }}
+              className="text-xs bg-blue-600 text-white font-medium rounded-lg px-3 py-1.5 hover:bg-blue-700 transition-colors flex-shrink-0"
+            >
+              イベントを投稿
+            </button>
+            <div className="text-right">
             <span className="text-xs text-zinc-400">
               {tab === "events"
                 ? (loading ? "読込中..." : `${events.length}件${isFiltered ? "（絞込中）" : ""}`)
@@ -269,6 +311,7 @@ export default function Home() {
             {lastUpdated && (
               <p className="text-xs text-gray-400 mt-0.5">最終更新：{lastUpdated}</p>
             )}
+            </div>
           </div>
         </div>
 
@@ -566,6 +609,49 @@ export default function Home() {
         )}
 
       </main>
+
+      {/* 投稿モーダル */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 space-y-4">
+            <h2 className="text-base font-semibold text-zinc-800">イベントを投稿する</h2>
+            <p className="text-xs text-zinc-500">
+              SNSの告知文やイベント情報をそのままコピペしてください。AIが自動で解析して登録します。
+            </p>
+            <textarea
+              value={submitText}
+              onChange={(e) => setSubmitText(e.target.value)}
+              rows={8}
+              placeholder={`例）\n【ロードスターミーティング】\n日時：4月20日（日）10:00〜\n場所：道の駅 富士川楽座（静岡県富士市）\n対象：ロードスター全型式\n参加費：無料・事前申込不要\n主催：おはよう静岡ロードスター\n\nSNSの投稿文やイベント告知をそのままコピペしてもOKです。`}
+              className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 resize-none"
+            />
+            {submitResult === "success" && (
+              <p className="text-sm text-green-600 font-medium">登録しました！</p>
+            )}
+            {submitResult === "error" && (
+              <p className="text-sm text-red-500">{submitError}</p>
+            )}
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => { setModalOpen(false); setSubmitText(""); setSubmitResult(""); }}
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={submitting || !submitText.trim()}
+                className="px-4 py-2 text-sm bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {submitting && (
+                  <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                )}
+                送信する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* フッター */}
       <footer className="max-w-2xl mx-auto px-4 py-8 text-center">
