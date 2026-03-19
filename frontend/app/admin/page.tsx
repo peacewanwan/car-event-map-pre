@@ -59,7 +59,7 @@ export default function AdminPage() {
     if (!data) return [];
     const counts: Record<string, number> = {};
     for (const row of data) {
-      const v = (row as Record<string, string>)[column];
+      const v = (row as unknown as Record<string, string>)[column];
       if (v) counts[v] = (counts[v] ?? 0) + 1;
     }
     const items = Object.entries(counts)
