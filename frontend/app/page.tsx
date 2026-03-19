@@ -113,6 +113,7 @@ export default function Home() {
   const [vehicles, setVehicles] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [displayCount, setDisplayCount] = useState(30);
   const [form, setForm] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
 
@@ -193,6 +194,7 @@ export default function Home() {
       result = result.filter((e) => e.event_date <= applied.dateTo);
     }
     setEvents(result);
+    setDisplayCount(30);
   }, [applied, allEvents, freeword]);
 
   function handleSearch() {
@@ -354,7 +356,7 @@ export default function Home() {
               </p>
             ) : (
               <ul className="space-y-2">
-                {events.map((event) => (
+                {events.slice(0, displayCount).map((event) => (
                   <li
                     key={event.id}
                     className="bg-white rounded-xl border border-zinc-200 px-4 py-3"
@@ -428,6 +430,16 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
+            )}
+            {!loading && events.length > displayCount && (
+              <div className="flex justify-center pt-2">
+                <button
+                  onClick={() => setDisplayCount((prev) => prev + 30)}
+                  className="bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg px-6 py-3 text-sm"
+                >
+                  もっと読み込む（残り{events.length - displayCount}件）
+                </button>
+              </div>
             )}
           </>
         )}
