@@ -114,6 +114,7 @@ export default function Home() {
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [displayCount, setDisplayCount] = useState(30);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [form, setForm] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
 
@@ -148,6 +149,19 @@ export default function Home() {
         .map((o) => o.value)
         .filter((v) => loaded.some((e) => e.category === v));
       setCategories(cats);
+
+      const { data: maxData } = await supabase
+        .from("events")
+        .select("created_at")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      if (maxData?.created_at) {
+        const d = new Date(maxData.created_at);
+        setLastUpdated(
+          `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+        );
+      }
 
       setLoading(false);
     }
@@ -246,11 +260,16 @@ export default function Home() {
             </h1>
             <p className="text-xs text-zinc-400 mt-0.5">全国の車イベント情報</p>
           </div>
-          <span className="text-xs text-zinc-400">
-            {tab === "events"
-              ? (loading ? "読込中..." : `${events.length}件${isFiltered ? "（絞込中）" : ""}`)
-              : (recurringLoading ? "読込中..." : `${recurringEvents.length}件`)}
-          </span>
+          <div className="text-right">
+            <span className="text-xs text-zinc-400">
+              {tab === "events"
+                ? (loading ? "読込中..." : `${events.length}件${isFiltered ? "（絞込中）" : ""}`)
+                : (recurringLoading ? "読込中..." : `${recurringEvents.length}件`)}
+            </span>
+            {lastUpdated && (
+              <p className="text-xs text-gray-400 mt-0.5">最終更新：{lastUpdated}</p>
+            )}
+          </div>
         </div>
 
         {/* タブ */}
