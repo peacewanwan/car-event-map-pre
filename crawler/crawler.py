@@ -166,6 +166,34 @@ def guess_prefecture(text: str):
     return None
 
 
+def match_url(event_name, url_map):
+    """イベント名とリンクテキストをスコアリングしてURLを返す"""
+    best_url = None
+    best_score = 0
+    name_tokens = set(event_name.replace("　", " ").split())
+
+    for pname, purl in url_map.items():
+        # 完全一致
+        if event_name == pname:
+            return purl
+        # 部分一致（どちらかが含む）
+        if event_name in pname or pname in event_name:
+            score = len(min(event_name, pname, key=len))
+            if score > best_score:
+                best_score = score
+                best_url = purl
+            continue
+        # トークン一致（単語レベルの重複スコア）
+        pname_tokens = set(pname.replace("　", " ").split())
+        common = name_tokens & pname_tokens
+        score = len(common)
+        if score >= 2 and score > best_score:
+            best_score = score
+            best_url = purl
+
+    return best_url
+
+
 def guess_vehicle(name, description=""):
     text = (name + " " + (description or "")).lower()
     patterns = [
@@ -198,16 +226,34 @@ def guess_vehicle(name, description=""):
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; CarEventMapBot/1.0)"}
 
 def fetch_generic(url):
-    """汎用：テキストのみ取得"""
+    """汎用：テキスト＋ページ内リンクを取得"""
     try:
         res = requests.get(url, headers=HEADERS, timeout=15)
         res.raise_for_status()
-        # apparent_encodingは誤検出が多いため、BS4にrawバイトを渡してmeta charsetから自動検出させる
         soup = BeautifulSoup(res.content, "html.parser")
+
+        # ページ内のリンクを収集（アンカーテキスト → URL）
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        base = f"{parsed.scheme}://{parsed.netloc}"
+        links = []
+        for a in soup.find_all("a", href=True):
+            href = a.get("href", "").strip()
+            text = a.get_text(strip=True)
+            if not href or href.startswith("#") or href.startswith("javascript"):
+                continue
+            if href.startswith("/"):
+                href = base + href
+            elif not href.startswith("http"):
+                href = url.rstrip("/") + "/" + href
+            if text:
+                links.append({"name": text, "source_url": href})
+
         for tag in soup(["script", "style", "nav", "footer", "header"]):
             tag.decompose()
         text = soup.get_text(separator="\n", strip=True)
-        return (text or "")[:4000], []
+        return (text or "")[:4000], links
+
     except Exception as e:
         print(f"  [ERROR] スクレイピング失敗: {url} - {e}")
         return "", []
@@ -325,12 +371,7 @@ def normalize(text, site_name, site_url, prefetched_events=None):
             url_map = {e["name"]: e["source_url"] for e in prefetched_events}
             for event in events:
                 name = event.get("name", "")
-                matched_url = url_map.get(name)
-                if not matched_url:
-                    for pname, purl in url_map.items():
-                        if name in pname or pname in name:
-                            matched_url = purl
-                            break
+                matched_url = match_url(name, url_map)
                 if matched_url:
                     event["source_url"] = matched_url
 
