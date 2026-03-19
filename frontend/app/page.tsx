@@ -15,6 +15,7 @@ type Event = {
   source_url: string | null;
   source_site: string | null;
   source_site_url: string | null;
+  recurring_id: number | null;
 };
 
 type RecurringEvent = {
@@ -338,24 +339,29 @@ export default function Home() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-base font-bold text-gray-900 leading-snug truncate">
-                            {event.name}
-                          </p>
+                        <p className="text-base font-bold text-gray-900 leading-snug truncate">
+                          {event.name}
+                        </p>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                          <span className="text-xs font-medium text-blue-600 flex-shrink-0">
+                            {formatDate(event.event_date)}
+                          </span>
                           {event.category && event.category !== "unknown" && (
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${categoryBadgeClass(event.category)}`}>
+                            <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${categoryBadgeClass(event.category)}`}>
                               {categoryLabel(event.category)}
                             </span>
                           )}
-                        </div>
-                        <p className="text-xs font-medium text-blue-600 mt-1">
-                          {formatDate(event.event_date)}
                           {event.prefecture && (
-                            <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-500 text-white">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-500 text-white flex-shrink-0">
                               {event.prefecture}
                             </span>
                           )}
-                        </p>
+                          {event.recurring_id && (
+                            <span className="text-xs px-1.5 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-500 flex-shrink-0">
+                              定期開催
+                            </span>
+                          )}
+                        </div>
                         {event.venue && (
                           <p className="text-xs text-zinc-400 mt-0.5 truncate">
                             {event.venue}
