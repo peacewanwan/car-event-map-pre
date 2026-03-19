@@ -256,7 +256,7 @@ export default function Home() {
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-baseline justify-between">
           <div>
             <h1 className="text-lg font-semibold text-zinc-900 tracking-tight">
-              Car Event MAP
+              二輪四輪オフマップ
             </h1>
             <p className="text-xs text-zinc-400 mt-0.5">全国の車イベント情報</p>
           </div>
@@ -569,7 +569,7 @@ export default function Home() {
 
       {/* フッター */}
       <footer className="max-w-2xl mx-auto px-4 py-8 text-center">
-        <p className="text-xs text-zinc-300">自動更新 · Car Event MAP</p>
+        <p className="text-xs text-zinc-300">自動更新 · 二輪四輪オフマップ</p>
       </footer>
 
     </div>
