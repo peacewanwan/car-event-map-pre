@@ -298,7 +298,7 @@ export default function Home() {
           <div className="flex items-start gap-3">
             <button
               onClick={() => { setModalOpen(true); setSubmitResult(""); setSubmitError(""); }}
-              className="text-xs bg-blue-600 text-white font-medium rounded-lg px-3 py-1.5 hover:bg-blue-700 transition-colors flex-shrink-0"
+              className="text-sm font-semibold bg-blue-600 text-white rounded-lg px-5 py-2.5 shadow-md hover:bg-blue-500 hover:shadow-lg transition-all duration-200 flex-shrink-0"
             >
               イベントを投稿
             </button>
@@ -615,8 +615,8 @@ export default function Home() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 space-y-4">
             <h2 className="text-base font-semibold text-zinc-800">イベントを投稿する</h2>
-            <p className="text-xs text-zinc-500">
-              SNSの告知文やイベント情報をそのままコピペしてください。AIが自動で解析して登録します。
+            <p className="text-sm text-gray-700 font-medium">
+              SNSの告知文やイベント情報をそのままコピペするだけでOKです。AIが自動解析して登録します。日時・場所の情報が含まれていると精度が上がります。
             </p>
             <textarea
               value={submitText}
