@@ -16,6 +16,7 @@ type Event = {
   source_site: string | null;
   source_site_url: string | null;
   recurring_id: number | null;
+  keywords: string[] | null;
 };
 
 type RecurringEvent = {
@@ -102,6 +103,9 @@ function frequencyBadgeClass(freq: string | null): string {
 export default function Home() {
   const [tab, setTab] = useState<"events" | "recurring">("events");
 
+  // フリーワード検索
+  const [freeword, setFreeword] = useState("");
+
   // イベント一覧
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
@@ -163,6 +167,14 @@ export default function Home() {
 
   useEffect(() => {
     let result = allEvents;
+    if (freeword.trim()) {
+      const kw = freeword.trim().toLowerCase();
+      result = result.filter((e) =>
+        [e.name, e.venue, e.prefecture, e.target_vehicle, e.source_site]
+          .some((f) => f?.toLowerCase().includes(kw)) ||
+        (e.keywords ?? []).some((k) => k.toLowerCase().includes(kw))
+      );
+    }
     if (applied.vehicle) {
       result = result.filter((e) => e.target_vehicle?.trim() === applied.vehicle.trim());
     }
@@ -181,13 +193,14 @@ export default function Home() {
       result = result.filter((e) => e.event_date <= applied.dateTo);
     }
     setEvents(result);
-  }, [applied, allEvents]);
+  }, [applied, allEvents, freeword]);
 
   function handleSearch() {
     setApplied({ ...form });
   }
 
   function handleReset() {
+    setFreeword("");
     setForm(EMPTY_FILTERS);
     setApplied(EMPTY_FILTERS);
   }
@@ -239,6 +252,15 @@ export default function Home() {
           <>
             {/* フィルターフォーム */}
             <div className="bg-white rounded-xl border border-zinc-200 px-4 py-4 space-y-3">
+              <div>
+                <input
+                  type="text"
+                  value={freeword}
+                  onChange={(e) => setFreeword(e.target.value)}
+                  placeholder="キーワードで検索（例：ロードスター、筑波、走行会）"
+                  className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                />
+              </div>
               <div>
                 <label className="block text-xs font-medium text-zinc-600 mb-1">車種</label>
                 <select
