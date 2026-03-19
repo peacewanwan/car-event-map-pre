@@ -10,11 +10,11 @@ type TopItem = { value: string; count: number };
 type SourceCount = { source_site: string; count: number };
 type CrawlLog = {
   id: number;
-  crawled_at: string;
+  executed_at: string;
   site_name: string;
   new_count: number;
   updated_count: number;
-  has_error: boolean;
+  skipped_count: number;
   error_message: string | null;
 };
 
@@ -55,7 +55,7 @@ export default function AdminPage() {
       .from("search_logs")
       .select(column)
       .not(column, "is", null)
-      .gte("created_at", since);
+      .gte("searched_at", since);
     if (!data) return [];
     const counts: Record<string, number> = {};
     for (const row of data) {
@@ -94,7 +94,7 @@ export default function AdminPage() {
     const { data } = await supabase
       .from("crawl_logs")
       .select("*")
-      .order("crawled_at", { ascending: false })
+      .order("executed_at", { ascending: false })
       .limit(20);
     setCrawlLogs(data || []);
   }
@@ -191,21 +191,23 @@ export default function AdminPage() {
                     <th className="px-3 py-2 text-left text-zinc-500 font-medium">サイト名</th>
                     <th className="px-3 py-2 text-right text-zinc-500 font-medium">新規</th>
                     <th className="px-3 py-2 text-right text-zinc-500 font-medium">更新</th>
+                    <th className="px-3 py-2 text-right text-zinc-500 font-medium">スキップ</th>
                     <th className="px-3 py-2 text-center text-zinc-500 font-medium">エラー</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
                   {crawlLogs.map((log) => (
-                    <tr key={log.id} className={log.has_error ? "bg-red-50" : ""}>
+                    <tr key={log.id} className={log.error_message ? "bg-red-50" : ""}>
                       <td className="px-3 py-2 text-zinc-500 whitespace-nowrap">
-                        {new Date(log.crawled_at).toLocaleString("ja-JP")}
+                        {new Date(log.executed_at).toLocaleString("ja-JP")}
                       </td>
                       <td className="px-3 py-2 text-zinc-700">{log.site_name}</td>
                       <td className="px-3 py-2 text-right text-zinc-600">{log.new_count}</td>
                       <td className="px-3 py-2 text-right text-zinc-600">{log.updated_count}</td>
+                      <td className="px-3 py-2 text-right text-zinc-600">{log.skipped_count}</td>
                       <td className="px-3 py-2 text-center">
-                        {log.has_error ? (
-                          <span className="text-red-500" title={log.error_message ?? ""}>✕</span>
+                        {log.error_message ? (
+                          <span className="text-red-500" title={log.error_message}>✕</span>
                         ) : (
                           <span className="text-green-500">✓</span>
                         )}
@@ -214,7 +216,7 @@ export default function AdminPage() {
                   ))}
                   {crawlLogs.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-3 py-6 text-center text-zinc-400">データなし</td>
+                      <td colSpan={6} className="px-3 py-6 text-center text-zinc-400">データなし</td>
                     </tr>
                   )}
                 </tbody>

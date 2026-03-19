@@ -436,19 +436,34 @@ def main():
         crawl_type = source.get("crawl_type", "generic")
         print(f"[{site_name}] クロール中... (type: {crawl_type})")
 
-        text, prefetched = fetch_site(site_url, crawl_type)
-        if not text:
-            print(f"  → テキスト取得失敗、スキップ\n")
-            continue
+        error_message = None
+        saved = updated = skipped = 0
+        try:
+            text, prefetched = fetch_site(site_url, crawl_type)
+            if not text:
+                print(f"  → テキスト取得失敗、スキップ\n")
+                error_message = "テキスト取得失敗"
+            else:
+                if prefetched:
+                    print(f"  → {len(prefetched)}件のリンクを事前取得")
+                events = normalize(text, site_name, site_url, prefetched)
+                print(f"  → {len(events)}件のイベントを抽出")
+                saved, updated, skipped = save_events(events)
+                print(f"  → 新規: {saved}件 / 更新: {updated}件 / スキップ: {skipped}件\n")
+        except Exception as e:
+            error_message = str(e)
+            print(f"  [ERROR] {site_name}: {e}\n")
 
-        if prefetched:
-            print(f"  → {len(prefetched)}件のリンクを事前取得")
-
-        events = normalize(text, site_name, site_url, prefetched)
-        print(f"  → {len(events)}件のイベントを抽出")
-
-        saved, updated, skipped = save_events(events)
-        print(f"  → 新規: {saved}件 / 更新: {updated}件 / スキップ: {skipped}件\n")
+        try:
+            supabase.table("crawl_logs").insert({
+                "site_name":     site_name,
+                "new_count":     saved,
+                "updated_count": updated,
+                "skipped_count": skipped,
+                "error_message": error_message,
+            }).execute()
+        except Exception as e:
+            print(f"  [WARN] crawl_logs書き込み失敗: {e}")
 
         total_saved += saved
         total_updated += updated
