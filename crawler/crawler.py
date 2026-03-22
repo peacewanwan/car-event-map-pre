@@ -381,9 +381,9 @@ def save_events(events):
 
         try:
             existing = supabase.table("events").select(
-                "id, name, genre, target_vehicle, source_url"
+                "id, name, genre, target_vehicle, source_url, category, keywords"
             ).eq("event_date", event["event_date"]).eq(
-                "venue", event.get("venue", "")
+                "name", event.get("name", "")
             ).execute()
 
             new_data = {
@@ -407,6 +407,8 @@ def save_events(events):
                     old.get("genre") != new_data["genre"],
                     old.get("target_vehicle") != new_data["target_vehicle"],
                     old.get("source_url") != new_data["source_url"],
+                    old.get("category") != new_data["category"],
+                    old.get("keywords") != new_data["keywords"],
                 ])
                 if has_diff:
                     supabase.table("events").update(new_data).eq("id", old["id"]).execute()
