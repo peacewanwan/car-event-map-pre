@@ -1,13 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  Map,
-  AdvancedMarker,
-  Pin,
-  InfoWindow,
-  type MapAdvancedMarkerClickEvent,
-} from '@vis.gl/react-google-maps'
+import { Map, AdvancedMarker, Pin, InfoWindow } from '@vis.gl/react-google-maps'
 
 export type Spot = {
   id: number
@@ -28,7 +22,8 @@ export default function MapView({ spots }: Props) {
   const [activeMarker, setActiveMarker] =
     useState<google.maps.marker.AdvancedMarkerElement | null>(null)
 
-  function handleMarkerClick(spot: Spot, e: MapAdvancedMarkerClickEvent) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function handleMarkerClick(spot: Spot, e: any) {
     setActiveSpot(spot)
     setActiveMarker(e.marker)
   }
