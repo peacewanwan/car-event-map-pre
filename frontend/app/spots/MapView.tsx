@@ -1,59 +1,61 @@
-"use client";
+'use client'
 
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
+import { useState } from 'react'
+import { Map, AdvancedMarker, Pin, InfoWindow } from '@vis.gl/react-google-maps'
 
 export type Spot = {
-  id: number;
-  name: string;
-  lat: number;
-  lng: number;
-  category: string | null;
-  description: string | null;
-  prefecture: string | null;
-};
+  id: number
+  name: string
+  lat: number
+  lng: number
+  category: string | null
+  description: string | null
+  prefecture: string | null
+}
 
 type Props = {
-  spots: Spot[];
-};
+  spots: Spot[]
+}
 
 export default function MapView({ spots }: Props) {
+  const [activeSpot, setActiveSpot] = useState<Spot | null>(null)
+
   return (
-    <MapContainer
-      center={[36.5, 137.5]}
-      zoom={6}
-      style={{ height: "100%", width: "100%" }}
+    <Map
+      mapId="DEMO_MAP_ID"
+      defaultCenter={{ lat: 36.5, lng: 137.5 }}
+      defaultZoom={6}
+      style={{ width: '100%', height: '100%' }}
     >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
       {spots.map((spot) => (
-        <Marker key={spot.id} position={[spot.lat, spot.lng]}>
-          <Popup>
-            <div className="space-y-1 min-w-[160px]">
-              <p className="font-bold text-sm">{spot.name}</p>
-              {spot.category && (
-                <p className="text-xs text-gray-500">カテゴリ：{spot.category}</p>
-              )}
-              {spot.prefecture && (
-                <p className="text-xs text-gray-500">{spot.prefecture}</p>
-              )}
-              {spot.description && (
-                <p className="text-xs text-gray-700 mt-1">{spot.description}</p>
-              )}
-            </div>
-          </Popup>
-        </Marker>
+        <AdvancedMarker
+          key={spot.id}
+          position={{ lat: spot.lat, lng: spot.lng }}
+          onClick={() => setActiveSpot(spot)}
+        >
+          <Pin />
+        </AdvancedMarker>
       ))}
-    </MapContainer>
-  );
+
+      {activeSpot && (
+        <InfoWindow
+          position={{ lat: activeSpot.lat, lng: activeSpot.lng }}
+          onCloseClick={() => setActiveSpot(null)}
+        >
+          <div className="space-y-1 min-w-[160px]">
+            <p className="font-bold text-sm">{activeSpot.name}</p>
+            {activeSpot.category && (
+              <p className="text-xs text-gray-500">カテゴリ：{activeSpot.category}</p>
+            )}
+            {activeSpot.prefecture && (
+              <p className="text-xs text-gray-500">{activeSpot.prefecture}</p>
+            )}
+            {activeSpot.description && (
+              <p className="text-xs text-gray-700 mt-1">{activeSpot.description}</p>
+            )}
+          </div>
+        </InfoWindow>
+      )}
+    </Map>
+  )
 }
