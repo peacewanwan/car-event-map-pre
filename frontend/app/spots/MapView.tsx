@@ -1,7 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Map, AdvancedMarker, Pin, InfoWindow } from '@vis.gl/react-google-maps'
+import {
+  Map,
+  AdvancedMarker,
+  Pin,
+  InfoWindow,
+  type MapAdvancedMarkerClickEvent,
+} from '@vis.gl/react-google-maps'
 
 export type Spot = {
   id: number
@@ -19,6 +25,18 @@ type Props = {
 
 export default function MapView({ spots }: Props) {
   const [activeSpot, setActiveSpot] = useState<Spot | null>(null)
+  const [activeMarker, setActiveMarker] =
+    useState<google.maps.marker.AdvancedMarkerElement | null>(null)
+
+  function handleMarkerClick(spot: Spot, e: MapAdvancedMarkerClickEvent) {
+    setActiveSpot(spot)
+    setActiveMarker(e.marker)
+  }
+
+  function handleClose() {
+    setActiveSpot(null)
+    setActiveMarker(null)
+  }
 
   return (
     <Map
@@ -31,17 +49,14 @@ export default function MapView({ spots }: Props) {
         <AdvancedMarker
           key={spot.id}
           position={{ lat: spot.lat, lng: spot.lng }}
-          onClick={() => setActiveSpot(spot)}
+          onClick={(e) => handleMarkerClick(spot, e)}
         >
           <Pin />
         </AdvancedMarker>
       ))}
 
-      {activeSpot && (
-        <InfoWindow
-          position={{ lat: activeSpot.lat, lng: activeSpot.lng }}
-          onCloseClick={() => setActiveSpot(null)}
-        >
+      {activeSpot && activeMarker && (
+        <InfoWindow anchor={activeMarker} onCloseClick={handleClose}>
           <div className="space-y-1 min-w-[160px]">
             <p className="font-bold text-sm">{activeSpot.name}</p>
             {activeSpot.category && (
