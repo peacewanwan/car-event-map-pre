@@ -35,11 +35,7 @@ export default function SpotsPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient()
-      const { data, error } = await supabase
-        .from('spots')
-        .select('id, name, lat, lng, category, description, prefecture, region')
-      console.log('spots data:', data)
-      console.log('spots error:', error)
+      const { data } = await supabase.from('spots').select('*')
       setAllSpots(data || [])
       setLoading(false)
     }
@@ -48,16 +44,14 @@ export default function SpotsPage() {
 
   const prefecturesInArea = AREAS.find((a) => a.label === selectedArea)?.prefectures ?? []
 
-  const spotPref = (s: Spot) => s.prefecture ?? s.region ?? ''
-
   const filtered = allSpots.filter((s) => {
-    if (selectedPref) return spotPref(s) === selectedPref
-    if (selectedArea) return prefecturesInArea.includes(spotPref(s))
+    if (selectedPref) return s.prefecture === selectedPref
+    if (selectedArea) return prefecturesInArea.includes(s.prefecture ?? '')
     return true
   })
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-zinc-50">
+    <div className="flex flex-col h-screen bg-zinc-50">
       {/* ヘッダー */}
       <header className="bg-white border-b border-zinc-200 px-4 py-3 flex-shrink-0">
         <h1 className="text-base font-semibold text-zinc-800">スポットマップ</h1>
