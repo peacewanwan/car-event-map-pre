@@ -11,6 +11,7 @@ export type Spot = {
   category: string | null
   description: string | null
   prefecture: string | null
+  region: string | null
 }
 
 type Props = {
