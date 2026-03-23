@@ -35,7 +35,9 @@ export default function SpotsPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient()
-      const { data } = await supabase.from('spots').select('*')
+      const { data, error } = await supabase.from('spots').select('*')
+      console.log('spots data:', data)
+      console.log('spots error:', error)
       setAllSpots(data || [])
       setLoading(false)
     }

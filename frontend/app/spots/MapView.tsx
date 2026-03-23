@@ -19,18 +19,14 @@ type Props = {
 
 export default function MapView({ spots }: Props) {
   const [activeSpot, setActiveSpot] = useState<Spot | null>(null)
-  const [activeMarker, setActiveMarker] =
-    useState<google.maps.marker.AdvancedMarkerElement | null>(null)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function handleMarkerClick(spot: Spot, e: any) {
+  function handleMarkerClick(spot: Spot) {
+    console.log('marker clicked:', spot.name)
     setActiveSpot(spot)
-    setActiveMarker(e.marker)
   }
 
   function handleClose() {
     setActiveSpot(null)
-    setActiveMarker(null)
   }
 
   return (
@@ -44,14 +40,18 @@ export default function MapView({ spots }: Props) {
         <AdvancedMarker
           key={spot.id}
           position={{ lat: spot.lat, lng: spot.lng }}
-          onClick={(e) => handleMarkerClick(spot, e)}
+          onClick={() => handleMarkerClick(spot)}
         >
           <Pin />
         </AdvancedMarker>
       ))}
 
-      {activeSpot && activeMarker && (
-        <InfoWindow anchor={activeMarker} onCloseClick={handleClose}>
+      {activeSpot && (
+        <InfoWindow
+          position={{ lat: activeSpot.lat, lng: activeSpot.lng }}
+          onCloseClick={handleClose}
+          pixelOffset={[0, -50]}
+        >
           <div className="space-y-1 min-w-[160px]">
             <p className="font-bold text-sm">{activeSpot.name}</p>
             {activeSpot.category && (
