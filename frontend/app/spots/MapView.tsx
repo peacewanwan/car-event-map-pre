@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Map, AdvancedMarker, Pin, InfoWindow } from '@vis.gl/react-google-maps'
+import { Map, AdvancedMarker, InfoWindow } from '@vis.gl/react-google-maps'
 
 export type Spot = {
   id: number
@@ -22,7 +22,6 @@ export default function MapView({ spots }: Props) {
   const [activeSpot, setActiveSpot] = useState<Spot | null>(null)
 
   function handleMarkerClick(spot: Spot) {
-    console.log('marker clicked:', spot.name)
     setActiveSpot(spot)
   }
 
@@ -42,9 +41,7 @@ export default function MapView({ spots }: Props) {
           key={spot.id}
           position={{ lat: spot.lat, lng: spot.lng }}
           onClick={() => handleMarkerClick(spot)}
-        >
-          <Pin />
-        </AdvancedMarker>
+        />
       ))}
 
       {activeSpot && (

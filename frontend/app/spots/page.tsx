@@ -26,6 +26,9 @@ const AREAS: { label: string; prefectures: string[] }[] = [
   { label: '九州・沖縄', prefectures: ['福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'] },
 ]
 
+// ヘッダー(48px) + フィルター(44px) = 92px
+const FILTER_HEIGHT = 92
+
 export default function SpotsPage() {
   const [allSpots, setAllSpots] = useState<Spot[]>([])
   const [loading, setLoading] = useState(true)
@@ -51,7 +54,7 @@ export default function SpotsPage() {
   })
 
   return (
-    <div className="flex flex-col h-screen bg-zinc-50">
+    <div className="flex flex-col bg-zinc-50" style={{ height: '100vh' }}>
       {/* ヘッダー */}
       <header className="bg-white border-b border-zinc-200 px-4 py-3 flex-shrink-0">
         <h1 className="text-base font-semibold text-zinc-800">スポットマップ</h1>
@@ -88,7 +91,7 @@ export default function SpotsPage() {
       </div>
 
       {/* 地図 */}
-      <div className="flex-1 relative">
+      <div style={{ height: `calc(100vh - ${FILTER_HEIGHT}px)` }}>
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
