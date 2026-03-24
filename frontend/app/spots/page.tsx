@@ -482,7 +482,83 @@ export default function SpotsPage() {
   const [geoTarget, setGeoTarget] = useState<{ lat: number; lng: number } | null>(null)
   const [geoLoading, setGeoLoading] = useState(false)
 
+  // 地図ポップアップ用チェックイン state
+  const [mapPopupCheckins, setMapPopupCheckins] = useState<Checkin[]>([])
+  const [mapPopupLoading, setMapPopupLoading] = useState(false)
+  const [mapShowNowForm, setMapShowNowForm] = useState(false)
+  const [mapNowNickname, setMapNowNickname] = useState('')
+  const [mapNowVehicle, setMapNowVehicle] = useState('')
+  const [mapSubmittingNow, setMapSubmittingNow] = useState(false)
+  const [mapMyCheckinId, setMapMyCheckinId] = useState<string | null>(null)
+
   useEffect(() => setMounted(true), [])
+
+  const loadMapPopupCheckins = useCallback(async (spotId: number) => {
+    setMapPopupLoading(true)
+    const supabase = createClient()
+    const now = new Date().toISOString()
+    const { data } = await supabase
+      .from('spot_checkins')
+      .select('*')
+      .eq('spot_id', spotId)
+      .eq('checkin_type', 'now')
+      .is('left_at', null)
+      .gt('expires_at', now)
+      .order('created_at', { ascending: false })
+    setMapPopupCheckins(data || [])
+    setMapPopupLoading(false)
+  }, [])
+
+  useEffect(() => {
+    if (activeMapSpot) {
+      setMapMyCheckinId(localStorage.getItem(`checkin_${activeMapSpot.id}`))
+      setMapShowNowForm(false)
+      setMapNowNickname('')
+      setMapNowVehicle('')
+      loadMapPopupCheckins(activeMapSpot.id)
+    } else {
+      setMapPopupCheckins([])
+    }
+  }, [activeMapSpot, loadMapPopupCheckins])
+
+  async function handleMapNowCheckin() {
+    if (!activeMapSpot || !mapNowNickname.trim()) return
+    setMapSubmittingNow(true)
+    const supabase = createClient()
+    const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString()
+    const { data, error } = await supabase
+      .from('spot_checkins')
+      .insert({
+        spot_id: activeMapSpot.id,
+        nickname: mapNowNickname.trim(),
+        vehicle_type: mapNowVehicle,
+        checkin_type: 'now',
+        expires_at: expiresAt,
+      })
+      .select()
+      .single()
+    if (!error && data) {
+      localStorage.setItem(`checkin_${activeMapSpot.id}`, data.id)
+      setMapMyCheckinId(data.id)
+      setMapShowNowForm(false)
+      setMapNowNickname('')
+      setMapNowVehicle('')
+      loadMapPopupCheckins(activeMapSpot.id)
+    }
+    setMapSubmittingNow(false)
+  }
+
+  async function handleMapLeave() {
+    if (!activeMapSpot || !mapMyCheckinId) return
+    const supabase = createClient()
+    await supabase
+      .from('spot_checkins')
+      .update({ left_at: new Date().toISOString() })
+      .eq('id', mapMyCheckinId)
+    localStorage.removeItem(`checkin_${activeMapSpot.id}`)
+    setMapMyCheckinId(null)
+    loadMapPopupCheckins(activeMapSpot.id)
+  }
 
   function handleNowButtonFromMap(spot: SpotWithCounts) {
     setActiveMapSpot(null)
@@ -756,7 +832,7 @@ export default function SpotsPage() {
               {/* カスタムポップアップ（React DOM内 → クリックイベント確実） */}
               {activeMapSpot && (
                 <div
-                  style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 30, background: '#fff', borderRadius: '12px', boxShadow: '0 4px 16px rgba(0,0,0,0.18)', padding: '14px 16px', minWidth: '200px', maxWidth: '280px' }}
+                  style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 30, background: '#fff', borderRadius: '12px', boxShadow: '0 4px 16px rgba(0,0,0,0.18)', padding: '14px 16px', minWidth: '260px', maxWidth: '320px', maxHeight: '60vh', overflowY: 'auto' }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
                     <button
@@ -773,9 +849,77 @@ export default function SpotsPage() {
                   {activeMapSpot.category && (
                     <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 4px' }}>{activeMapSpot.category}</p>
                   )}
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '0' }}>
                     <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: 500 }}>🔴 今{activeMapSpot.nowCount}人</span>
                     <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: 500 }}>📅 今月{activeMapSpot.planCount}人</span>
+                  </div>
+
+                  {/* 今いるナウセクション */}
+                  <div style={{ marginTop: '10px', borderTop: '1px solid #f3f4f6', paddingTop: '10px' }}>
+                    <p style={{ fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '6px', marginTop: 0 }}>今いるナウ</p>
+                    {mapPopupLoading ? (
+                      <p style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '6px' }}>読込中...</p>
+                    ) : mapPopupCheckins.length === 0 ? (
+                      <p style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '6px' }}>現在チェックイン中の人はいません</p>
+                    ) : (
+                      <ul style={{ margin: '0 0 8px', padding: 0, listStyle: 'none' }}>
+                        {mapPopupCheckins.map((c) => (
+                          <li key={c.id} style={{ fontSize: '11px', color: '#374151', display: 'flex', gap: '6px', marginBottom: '2px' }}>
+                            <span style={{ fontWeight: 600 }}>{c.nickname}</span>
+                            {c.vehicle_type && <span style={{ color: '#6b7280' }}>{c.vehicle_type}</span>}
+                            <span style={{ color: '#9ca3af' }}>{formatTime(c.created_at)}〜</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {mapMyCheckinId ? (
+                      <button
+                        onClick={handleMapLeave}
+                        style={{ fontSize: '11px', padding: '5px 10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                      >
+                        退出する
+                      </button>
+                    ) : mapShowNowForm ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <input
+                          type="text"
+                          placeholder="ニックネーム"
+                          value={mapNowNickname}
+                          onChange={(e) => setMapNowNickname(e.target.value)}
+                          style={{ width: '100%', fontSize: '12px', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '5px 8px', boxSizing: 'border-box', outline: 'none' }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="車種（例：ロードスター）"
+                          value={mapNowVehicle}
+                          onChange={(e) => setMapNowVehicle(e.target.value)}
+                          style={{ width: '100%', fontSize: '12px', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '5px 8px', boxSizing: 'border-box', outline: 'none' }}
+                        />
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            onClick={handleMapNowCheckin}
+                            disabled={mapSubmittingNow || !mapNowNickname.trim()}
+                            style={{ flex: 1, fontSize: '12px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', padding: '5px 0', cursor: 'pointer', opacity: (mapSubmittingNow || !mapNowNickname.trim()) ? 0.5 : 1 }}
+                          >
+                            チェックイン（3時間）
+                          </button>
+                          <button
+                            onClick={() => setMapShowNowForm(false)}
+                            style={{ fontSize: '12px', padding: '5px 8px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '6px', cursor: 'pointer' }}
+                          >
+                            キャンセル
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setMapShowNowForm(true)}
+                        style={{ fontSize: '11px', padding: '5px 10px', background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                      >
+                        ここにいるナウ
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
