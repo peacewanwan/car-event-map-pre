@@ -558,9 +558,9 @@ export default function SpotsPage() {
             <h1 className="text-base font-semibold text-zinc-800">オフ会メーカー</h1>
             <button
               onClick={() => setHelpOpen(true)}
-              className="w-5 h-5 rounded-full bg-zinc-200 text-zinc-500 text-xs font-bold hover:bg-zinc-300 transition-colors flex items-center justify-center flex-shrink-0"
+              className="text-xs px-2 py-0.5 bg-zinc-100 text-zinc-600 rounded-full hover:bg-zinc-200 transition-colors"
             >
-              ?
+              使い方
             </button>
           </div>
           <p className="text-xs text-zinc-500 leading-relaxed mb-2">
