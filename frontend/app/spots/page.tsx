@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { APIProvider, Map as GoogleMap, AdvancedMarker, InfoWindow } from '@vis.gl/react-google-maps'
 import { createClient } from '@/lib/supabase/client'
 
 type Spot = {
@@ -8,6 +9,8 @@ type Spot = {
   name: string
   category: string | null
   prefecture: string | null
+  lat: number
+  lng: number
 }
 
 type Checkin = {
@@ -457,13 +460,18 @@ export default function SpotsPage() {
   const [selectedPref, setSelectedPref] = useState('')
   const [freeword, setFreeword] = useState('')
   const [helpOpen, setHelpOpen] = useState(false)
+  const [tab, setTab] = useState<'list' | 'map'>('list')
+  const [activeMapSpot, setActiveMapSpot] = useState<SpotWithCounts | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => setMounted(true), [])
 
   useEffect(() => {
     async function load() {
       const supabase = createClient()
 
       const [{ data: spotsData }, { data: checkinsData }] = await Promise.all([
-        supabase.from('spots').select('id, name, category, prefecture').order('name'),
+        supabase.from('spots').select('id, name, category, prefecture, lat, lng').order('name'),
         supabase
           .from('spot_checkins')
           .select('spot_id, checkin_type, left_at, expires_at, planned_at'),
@@ -517,7 +525,7 @@ export default function SpotsPage() {
   }))
 
   return (
-    <div className="min-h-screen bg-zinc-50">
+    <div className="flex flex-col h-screen overflow-hidden bg-zinc-50">
       {/* 使い方モーダル */}
       {helpOpen && (
         <div
@@ -569,43 +577,129 @@ export default function SpotsPage() {
             誰かが来てくれるのを待つ？<br />
             <span className="font-medium">今いる場所・行く予定を共有して仲間を増やそう</span>
           </p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={freeword}
-              onChange={(e) => setFreeword(e.target.value)}
-              placeholder="スポット名で検索"
-              className="flex-1 text-sm border border-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300"
-            />
-            <select
-              value={selectedPref}
-              onChange={(e) => setSelectedPref(e.target.value)}
-              className="text-sm border border-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
-            >
-              <option value="">都道府県：すべて</option>
-              {prefectures.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
+
+          {/* タブ */}
+          <div className="flex gap-1 mb-2">
+            {(['list', 'map'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`flex-1 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  tab === t
+                    ? 'bg-zinc-800 text-white'
+                    : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
+                }`}
+              >
+                {t === 'list' ? 'リスト' : '地図'}
+              </button>
+            ))}
           </div>
-          <p className="text-xs text-zinc-400 mt-1.5">
-            {loading ? '読込中...' : `${filtered.length}件`}
-          </p>
+
+          {/* リストタブのみ検索フォーム表示 */}
+          {tab === 'list' && (
+            <>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={freeword}
+                  onChange={(e) => setFreeword(e.target.value)}
+                  placeholder="スポット名で検索"
+                  className="flex-1 text-sm border border-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                />
+                <select
+                  value={selectedPref}
+                  onChange={(e) => setSelectedPref(e.target.value)}
+                  className="text-sm border border-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
+                >
+                  <option value="">都道府県：すべて</option>
+                  {prefectures.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-xs text-zinc-400 mt-1.5">
+                {loading ? '読込中...' : `${filtered.length}件`}
+              </p>
+            </>
+          )}
         </div>
       </header>
 
-      {/* スポットリスト */}
-      <main className="max-w-2xl mx-auto px-4 py-4 space-y-2">
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
+      {/* リストタブ */}
+      {tab === 'list' && (
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-2xl mx-auto px-4 py-4 space-y-2">
+            {loading ? (
+              <div className="flex justify-center py-20">
+                <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
+              </div>
+            ) : spotsWithCounts.length === 0 ? (
+              <p className="text-center text-zinc-400 py-20 text-sm">スポットが見つかりません</p>
+            ) : (
+              spotsWithCounts.map((spot) => <SpotCard key={spot.id} spot={spot} />)
+            )}
           </div>
-        ) : spotsWithCounts.length === 0 ? (
-          <p className="text-center text-zinc-400 py-20 text-sm">スポットが見つかりません</p>
-        ) : (
-          spotsWithCounts.map((spot) => <SpotCard key={spot.id} spot={spot} />)
-        )}
-      </main>
+        </main>
+      )}
+
+      {/* 地図タブ */}
+      {tab === 'map' && mounted && (
+        <div className="flex-1 min-h-0">
+          {loading ? (
+            <div className="flex justify-center items-center h-full">
+              <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
+            </div>
+          ) : (
+            <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
+              <GoogleMap
+                mapId="DEMO_MAP_ID"
+                defaultCenter={{ lat: 36.5, lng: 137.0 }}
+                defaultZoom={6}
+                style={{ width: '100%', height: '100%' }}
+                onClick={() => setActiveMapSpot(null)}
+              >
+                {spotsWithCounts.map((spot) => (
+                  <AdvancedMarker
+                    key={spot.id}
+                    position={{ lat: spot.lat, lng: spot.lng }}
+                    onClick={() => setActiveMapSpot(spot)}
+                  >
+                    {spot.nowCount > 0 ? (
+                      <div className="w-7 h-7 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shadow-md ring-2 ring-white">
+                        {spot.nowCount}
+                      </div>
+                    ) : (
+                      <div className="w-3.5 h-3.5 rounded-full bg-zinc-400 shadow ring-1 ring-white" />
+                    )}
+                  </AdvancedMarker>
+                ))}
+
+                {activeMapSpot && (
+                  <InfoWindow
+                    position={{ lat: activeMapSpot.lat, lng: activeMapSpot.lng }}
+                    onCloseClick={() => setActiveMapSpot(null)}
+                    pixelOffset={[0, -20]}
+                  >
+                    <div className="space-y-1 min-w-[160px]">
+                      <p className="font-bold text-sm">{activeMapSpot.name}</p>
+                      {activeMapSpot.prefecture && (
+                        <p className="text-xs text-gray-500">{activeMapSpot.prefecture}</p>
+                      )}
+                      {activeMapSpot.category && (
+                        <p className="text-xs text-gray-500">{activeMapSpot.category}</p>
+                      )}
+                      <div className="flex gap-2 pt-0.5">
+                        <span className="text-xs text-red-600 font-medium">🔴 今{activeMapSpot.nowCount}人</span>
+                        <span className="text-xs text-blue-600 font-medium">📅 今月{activeMapSpot.planCount}人</span>
+                      </div>
+                    </div>
+                  </InfoWindow>
+                )}
+              </GoogleMap>
+            </APIProvider>
+          )}
+        </div>
+      )}
     </div>
   )
 }
