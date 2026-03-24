@@ -56,8 +56,12 @@ function MapGeolocator({ target }: { target: { lat: number; lng: number } | null
 
 // ---------- SpotCard ----------
 
-function SpotCard({ spot }: { spot: SpotWithCounts }) {
+function SpotCard({ spot, openSpotId }: { spot: SpotWithCounts; openSpotId: number | null }) {
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (openSpotId === spot.id) setOpen(true)
+  }, [openSpotId, spot.id])
   const [checkins, setCheckins] = useState<Checkin[]>([])
   const [loadingDetail, setLoadingDetail] = useState(false)
 
@@ -475,11 +479,18 @@ export default function SpotsPage() {
   const [helpOpen, setHelpOpen] = useState(false)
   const [tab, setTab] = useState<'list' | 'map'>('list')
   const [activeMapSpot, setActiveMapSpot] = useState<SpotWithCounts | null>(null)
+  const [openSpotId, setOpenSpotId] = useState<number | null>(null)
   const [mounted, setMounted] = useState(false)
   const [geoTarget, setGeoTarget] = useState<{ lat: number; lng: number } | null>(null)
   const [geoLoading, setGeoLoading] = useState(false)
 
   useEffect(() => setMounted(true), [])
+
+  function handleNowButtonFromMap(spot: SpotWithCounts) {
+    setActiveMapSpot(null)
+    setOpenSpotId(spot.id)
+    setTab('list')
+  }
 
   function handleGeolocate() {
     if (!navigator.geolocation) {
@@ -669,7 +680,7 @@ export default function SpotsPage() {
             ) : spotsWithCounts.length === 0 ? (
               <p className="text-center text-zinc-400 py-20 text-sm">スポットが見つかりません</p>
             ) : (
-              spotsWithCounts.map((spot) => <SpotCard key={spot.id} spot={spot} />)
+              spotsWithCounts.map((spot) => <SpotCard key={spot.id} spot={spot} openSpotId={openSpotId} />)
             )}
           </div>
         </main>
@@ -728,12 +739,19 @@ export default function SpotsPage() {
                       position={{ lat: spot.lat, lng: spot.lng }}
                       onClick={() => setActiveMapSpot(spot)}
                     >
-                      {spot.nowCount > 0 ? (
-                        <div className="w-9 h-9 rounded-full bg-red-500 text-white text-sm font-bold flex items-center justify-center shadow-md ring-2 ring-white">
-                          {spot.nowCount}
-                        </div>
+                      {spot.nowCount === 0 ? (
+                        <svg width="28" height="36" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M14 0C6.268 0 0 6.268 0 14c0 9.333 14 22 14 22s14-12.667 14-22C28 6.268 21.732 0 14 0z" fill="#3B82F6"/>
+                        </svg>
                       ) : (
-                        <div className="w-5 h-5 rounded-full bg-zinc-400 shadow ring-1 ring-white" />
+                        <div style={{ position: 'relative', width: '36px', height: '44px' }}>
+                          <svg width="36" height="44" viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 0C8.059 0 0 8.059 0 18c0 11.667 18 26 18 26s18-14.333 18-26C36 8.059 27.941 0 18 0z" fill="#EF4444"/>
+                          </svg>
+                          <span style={{ position: 'absolute', top: '8px', left: '50%', transform: 'translateX(-50%)', color: 'white', fontSize: '13px', fontWeight: 600 }}>
+                            {spot.nowCount}
+                          </span>
+                        </div>
                       )}
                     </AdvancedMarker>
                   ))}
@@ -756,6 +774,12 @@ export default function SpotsPage() {
                           <span className="text-xs text-red-600 font-medium">🔴 今{activeMapSpot.nowCount}人</span>
                           <span className="text-xs text-blue-600 font-medium">📅 今月{activeMapSpot.planCount}人</span>
                         </div>
+                        <button
+                          onClick={() => handleNowButtonFromMap(activeMapSpot)}
+                          className="mt-2 w-full text-xs bg-red-500 text-white rounded-lg py-1.5 font-medium hover:bg-red-600 transition-colors"
+                        >
+                          ここにいるナウ
+                        </button>
                       </div>
                     </InfoWindow>
                   )}
