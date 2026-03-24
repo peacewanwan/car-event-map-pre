@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { APIProvider, Map as GoogleMap, AdvancedMarker, InfoWindow, useMap } from '@vis.gl/react-google-maps'
+import { APIProvider, Map as GoogleMap, AdvancedMarker, useMap } from '@vis.gl/react-google-maps'
 import { createClient } from '@/lib/supabase/client'
 
 type Spot = {
@@ -56,8 +56,12 @@ function MapGeolocator({ target }: { target: { lat: number; lng: number } | null
 
 // ---------- SpotCard ----------
 
-function SpotCard({ spot }: { spot: SpotWithCounts }) {
+function SpotCard({ spot, openSpotId }: { spot: SpotWithCounts; openSpotId: number | null }) {
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (openSpotId === spot.id) setOpen(true)
+  }, [openSpotId, spot.id])
   const [checkins, setCheckins] = useState<Checkin[]>([])
   const [loadingDetail, setLoadingDetail] = useState(false)
 
@@ -235,32 +239,30 @@ function SpotCard({ spot }: { spot: SpotWithCounts }) {
     <div className="bg-white rounded-xl border border-zinc-200">
       {/* カードヘッダー（クリックでアコーディオン） */}
       <button
-        className="w-full text-left px-4 py-3 flex items-center justify-between gap-2"
+        className="w-full text-left px-4 py-3"
         onClick={() => setOpen(!open)}
       >
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-zinc-900 truncate">{spot.name}</p>
-          <div className="flex flex-wrap gap-1 mt-0.5">
-            {spot.prefecture && (
-              <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
-                {spot.prefecture}
-              </span>
-            )}
-            {spot.category && (
-              <span className="text-xs px-1.5 py-0.5 bg-zinc-100 text-zinc-600 rounded">
-                {spot.category}
-              </span>
-            )}
-          </div>
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <p className="font-semibold text-zinc-900">{spot.name}</p>
+          <span className="text-zinc-400 text-xs flex-shrink-0">{open ? '▲' : '▼'}</span>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded-full font-medium whitespace-nowrap">
+        <div className="flex flex-wrap gap-1">
+          {spot.prefecture && (
+            <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
+              {spot.prefecture}
+            </span>
+          )}
+          {spot.category && (
+            <span className="text-xs px-1.5 py-0.5 bg-zinc-100 text-zinc-600 rounded">
+              {spot.category}
+            </span>
+          )}
+          <span className="text-xs px-2 py-0.5 bg-red-50 text-red-600 rounded-full font-medium">
             🔴 今{spot.nowCount}人
           </span>
-          <span className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-full font-medium whitespace-nowrap">
+          <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full font-medium">
             📅 今月{spot.planCount}人
           </span>
-          <span className="text-zinc-400 text-xs">{open ? '▲' : '▼'}</span>
         </div>
       </button>
 
@@ -475,11 +477,18 @@ export default function SpotsPage() {
   const [helpOpen, setHelpOpen] = useState(false)
   const [tab, setTab] = useState<'list' | 'map'>('list')
   const [activeMapSpot, setActiveMapSpot] = useState<SpotWithCounts | null>(null)
+  const [openSpotId, setOpenSpotId] = useState<number | null>(null)
   const [mounted, setMounted] = useState(false)
   const [geoTarget, setGeoTarget] = useState<{ lat: number; lng: number } | null>(null)
   const [geoLoading, setGeoLoading] = useState(false)
 
   useEffect(() => setMounted(true), [])
+
+  function handleNowButtonFromMap(spot: SpotWithCounts) {
+    setActiveMapSpot(null)
+    setOpenSpotId(spot.id)
+    setTab('list')
+  }
 
   function handleGeolocate() {
     if (!navigator.geolocation) {
@@ -669,7 +678,7 @@ export default function SpotsPage() {
             ) : spotsWithCounts.length === 0 ? (
               <p className="text-center text-zinc-400 py-20 text-sm">スポットが見つかりません</p>
             ) : (
-              spotsWithCounts.map((spot) => <SpotCard key={spot.id} spot={spot} />)
+              spotsWithCounts.map((spot) => <SpotCard key={spot.id} spot={spot} openSpotId={openSpotId} />)
             )}
           </div>
         </main>
@@ -685,11 +694,11 @@ export default function SpotsPage() {
           ) : (
             <>
               {/* 都道府県フィルター overlay */}
-              <div className="absolute top-3 left-3 z-10">
+              <div style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 20 }}>
                 <select
                   value={selectedPref}
-                  onChange={(e) => setSelectedPref(e.target.value)}
-                  className="bg-white rounded-lg shadow px-3 py-1.5 text-sm focus:outline-none"
+                  onChange={(e) => { setSelectedPref(e.target.value); setActiveMapSpot(null) }}
+                  style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', border: 'none', padding: '6px 12px', fontSize: '14px', cursor: 'pointer' }}
                 >
                   <option value="">都道府県：すべて</option>
                   {prefectures.map((p) => (
@@ -699,11 +708,11 @@ export default function SpotsPage() {
               </div>
 
               {/* 現在地ボタン overlay */}
-              <div className="absolute top-3 right-3 z-10">
+              <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 20 }}>
                 <button
                   onClick={handleGeolocate}
                   disabled={geoLoading}
-                  className="bg-white rounded-lg shadow px-3 py-1.5 text-sm disabled:opacity-50"
+                  style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', border: 'none', padding: '6px 12px', fontSize: '14px', cursor: 'pointer', opacity: geoLoading ? 0.5 : 1 }}
                 >
                   {geoLoading ? '取得中...' : '現在地'}
                 </button>
@@ -719,48 +728,57 @@ export default function SpotsPage() {
                 >
                   <MapGeolocator target={geoTarget} />
 
-                  {(selectedPref
-                    ? spotsWithCounts.filter((s) => s.prefecture === selectedPref)
-                    : spotsWithCounts
-                  ).map((spot) => (
+                  {spotsWithCounts.map((spot) => (
                     <AdvancedMarker
                       key={spot.id}
                       position={{ lat: spot.lat, lng: spot.lng }}
                       onClick={() => setActiveMapSpot(spot)}
                     >
-                      {spot.nowCount > 0 ? (
-                        <div className="w-9 h-9 rounded-full bg-red-500 text-white text-sm font-bold flex items-center justify-center shadow-md ring-2 ring-white">
-                          {spot.nowCount}
-                        </div>
+                      {spot.nowCount === 0 ? (
+                        <svg width="28" height="36" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M14 0C6.268 0 0 6.268 0 14c0 9.333 14 22 14 22s14-12.667 14-22C28 6.268 21.732 0 14 0z" fill="#3B82F6"/>
+                        </svg>
                       ) : (
-                        <div className="w-5 h-5 rounded-full bg-zinc-400 shadow ring-1 ring-white" />
+                        <div style={{ position: 'relative', width: '36px', height: '44px' }}>
+                          <svg width="36" height="44" viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 0C8.059 0 0 8.059 0 18c0 11.667 18 26 18 26s18-14.333 18-26C36 8.059 27.941 0 18 0z" fill="#EF4444"/>
+                          </svg>
+                          <span style={{ position: 'absolute', top: '8px', left: '50%', transform: 'translateX(-50%)', color: 'white', fontSize: '13px', fontWeight: 600 }}>
+                            {spot.nowCount}
+                          </span>
+                        </div>
                       )}
                     </AdvancedMarker>
                   ))}
-
-                  {activeMapSpot && (
-                    <InfoWindow
-                      position={{ lat: activeMapSpot.lat, lng: activeMapSpot.lng }}
-                      onCloseClick={() => setActiveMapSpot(null)}
-                      pixelOffset={[0, -20]}
-                    >
-                      <div className="space-y-1 min-w-[160px]">
-                        <p className="font-bold text-sm">{activeMapSpot.name}</p>
-                        {activeMapSpot.prefecture && (
-                          <p className="text-xs text-gray-500">{activeMapSpot.prefecture}</p>
-                        )}
-                        {activeMapSpot.category && (
-                          <p className="text-xs text-gray-500">{activeMapSpot.category}</p>
-                        )}
-                        <div className="flex gap-2 pt-0.5">
-                          <span className="text-xs text-red-600 font-medium">🔴 今{activeMapSpot.nowCount}人</span>
-                          <span className="text-xs text-blue-600 font-medium">📅 今月{activeMapSpot.planCount}人</span>
-                        </div>
-                      </div>
-                    </InfoWindow>
-                  )}
                 </GoogleMap>
               </APIProvider>
+
+              {/* カスタムポップアップ（React DOM内 → クリックイベント確実） */}
+              {activeMapSpot && (
+                <div
+                  style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 30, background: '#fff', borderRadius: '12px', boxShadow: '0 4px 16px rgba(0,0,0,0.18)', padding: '14px 16px', minWidth: '200px', maxWidth: '280px' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                    <button
+                      onClick={() => handleNowButtonFromMap(activeMapSpot)}
+                      style={{ background: 'none', border: 'none', padding: 0, fontWeight: 700, fontSize: '14px', cursor: 'pointer', color: '#111827', textAlign: 'left', flex: 1, textDecoration: 'underline', textDecorationColor: '#d1d5db' }}
+                    >
+                      {activeMapSpot.name}
+                    </button>
+                    <button onClick={() => setActiveMapSpot(null)} style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#9ca3af', marginLeft: '8px', padding: 0, lineHeight: 1 }}>✕</button>
+                  </div>
+                  {activeMapSpot.prefecture && (
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 4px' }}>{activeMapSpot.prefecture}</p>
+                  )}
+                  {activeMapSpot.category && (
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 4px' }}>{activeMapSpot.category}</p>
+                  )}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: 500 }}>🔴 今{activeMapSpot.nowCount}人</span>
+                    <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: 500 }}>📅 今月{activeMapSpot.planCount}人</span>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
