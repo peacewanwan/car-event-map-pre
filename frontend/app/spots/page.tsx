@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { APIProvider, Map as GoogleMap, AdvancedMarker, InfoWindow, useMap } from '@vis.gl/react-google-maps'
+import { APIProvider, Map as GoogleMap, AdvancedMarker, useMap } from '@vis.gl/react-google-maps'
 import { createClient } from '@/lib/supabase/client'
 
 type Spot = {
@@ -696,11 +696,11 @@ export default function SpotsPage() {
           ) : (
             <>
               {/* 都道府県フィルター overlay */}
-              <div className="absolute top-3 left-3 z-10">
+              <div style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 20 }}>
                 <select
                   value={selectedPref}
-                  onChange={(e) => setSelectedPref(e.target.value)}
-                  className="bg-white rounded-lg shadow px-3 py-1.5 text-sm focus:outline-none"
+                  onChange={(e) => { setSelectedPref(e.target.value); setActiveMapSpot(null) }}
+                  style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', border: 'none', padding: '6px 12px', fontSize: '14px', cursor: 'pointer' }}
                 >
                   <option value="">都道府県：すべて</option>
                   {prefectures.map((p) => (
@@ -710,11 +710,11 @@ export default function SpotsPage() {
               </div>
 
               {/* 現在地ボタン overlay */}
-              <div className="absolute top-3 right-3 z-10">
+              <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 20 }}>
                 <button
                   onClick={handleGeolocate}
                   disabled={geoLoading}
-                  className="bg-white rounded-lg shadow px-3 py-1.5 text-sm disabled:opacity-50"
+                  style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', border: 'none', padding: '6px 12px', fontSize: '14px', cursor: 'pointer', opacity: geoLoading ? 0.5 : 1 }}
                 >
                   {geoLoading ? '取得中...' : '現在地'}
                 </button>
@@ -730,10 +730,7 @@ export default function SpotsPage() {
                 >
                   <MapGeolocator target={geoTarget} />
 
-                  {(selectedPref
-                    ? spotsWithCounts.filter((s) => s.prefecture === selectedPref)
-                    : spotsWithCounts
-                  ).map((spot) => (
+                  {spotsWithCounts.map((spot) => (
                     <AdvancedMarker
                       key={spot.id}
                       position={{ lat: spot.lat, lng: spot.lng }}
@@ -755,47 +752,36 @@ export default function SpotsPage() {
                       )}
                     </AdvancedMarker>
                   ))}
-
-                  {activeMapSpot && (
-                    <InfoWindow
-                      position={{ lat: activeMapSpot.lat, lng: activeMapSpot.lng }}
-                      onCloseClick={() => setActiveMapSpot(null)}
-                      pixelOffset={[0, -20]}
-                    >
-                      <div style={{ minWidth: '160px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <p style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>{activeMapSpot.name}</p>
-                        {activeMapSpot.prefecture && (
-                          <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{activeMapSpot.prefecture}</p>
-                        )}
-                        {activeMapSpot.category && (
-                          <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{activeMapSpot.category}</p>
-                        )}
-                        <div style={{ display: 'flex', gap: '8px', paddingTop: '2px' }}>
-                          <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: 500 }}>🔴 今{activeMapSpot.nowCount}人</span>
-                          <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: 500 }}>📅 今月{activeMapSpot.planCount}人</span>
-                        </div>
-                        <button
-                          onClick={() => handleNowButtonFromMap(activeMapSpot)}
-                          style={{
-                            marginTop: '8px',
-                            width: '100%',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            background: '#EF4444',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '8px',
-                            padding: '6px 0',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          ここにいるナウ
-                        </button>
-                      </div>
-                    </InfoWindow>
-                  )}
                 </GoogleMap>
               </APIProvider>
+
+              {/* カスタムポップアップ（React DOM内 → クリックイベント確実） */}
+              {activeMapSpot && (
+                <div
+                  style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 30, background: '#fff', borderRadius: '12px', boxShadow: '0 4px 16px rgba(0,0,0,0.18)', padding: '14px 16px', minWidth: '200px', maxWidth: '280px' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                    <p style={{ fontWeight: 700, fontSize: '14px', margin: 0, flex: 1 }}>{activeMapSpot.name}</p>
+                    <button onClick={() => setActiveMapSpot(null)} style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#9ca3af', marginLeft: '8px', padding: 0, lineHeight: 1 }}>✕</button>
+                  </div>
+                  {activeMapSpot.prefecture && (
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 4px' }}>{activeMapSpot.prefecture}</p>
+                  )}
+                  {activeMapSpot.category && (
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 6px' }}>{activeMapSpot.category}</p>
+                  )}
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: 500 }}>🔴 今{activeMapSpot.nowCount}人</span>
+                    <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: 500 }}>📅 今月{activeMapSpot.planCount}人</span>
+                  </div>
+                  <button
+                    onClick={() => handleNowButtonFromMap(activeMapSpot)}
+                    style={{ width: '100%', fontSize: '13px', fontWeight: 600, background: '#EF4444', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 0', cursor: 'pointer' }}
+                  >
+                    ここにいるナウ
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
