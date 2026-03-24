@@ -762,21 +762,32 @@ export default function SpotsPage() {
                       onCloseClick={() => setActiveMapSpot(null)}
                       pixelOffset={[0, -20]}
                     >
-                      <div className="space-y-1 min-w-[160px]">
-                        <p className="font-bold text-sm">{activeMapSpot.name}</p>
+                      <div style={{ minWidth: '160px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <p style={{ fontWeight: 700, fontSize: '14px', margin: 0 }}>{activeMapSpot.name}</p>
                         {activeMapSpot.prefecture && (
-                          <p className="text-xs text-gray-500">{activeMapSpot.prefecture}</p>
+                          <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{activeMapSpot.prefecture}</p>
                         )}
                         {activeMapSpot.category && (
-                          <p className="text-xs text-gray-500">{activeMapSpot.category}</p>
+                          <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{activeMapSpot.category}</p>
                         )}
-                        <div className="flex gap-2 pt-0.5">
-                          <span className="text-xs text-red-600 font-medium">🔴 今{activeMapSpot.nowCount}人</span>
-                          <span className="text-xs text-blue-600 font-medium">📅 今月{activeMapSpot.planCount}人</span>
+                        <div style={{ display: 'flex', gap: '8px', paddingTop: '2px' }}>
+                          <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: 500 }}>🔴 今{activeMapSpot.nowCount}人</span>
+                          <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: 500 }}>📅 今月{activeMapSpot.planCount}人</span>
                         </div>
                         <button
                           onClick={() => handleNowButtonFromMap(activeMapSpot)}
-                          className="mt-2 w-full text-xs bg-red-500 text-white rounded-lg py-1.5 font-medium hover:bg-red-600 transition-colors"
+                          style={{
+                            marginTop: '8px',
+                            width: '100%',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            background: '#EF4444',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '6px 0',
+                            cursor: 'pointer',
+                          }}
                         >
                           ここにいるナウ
                         </button>
