@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
+
+// ---------- Types ----------
 
 type Event = {
   id: number;
@@ -32,108 +35,267 @@ type RecurringEvent = {
   source_url: string | null;
 };
 
-type Filters = {
-  vehicle: string;
-  prefecture: string;
-  category: string;
-  dateFrom: string;
-  dateTo: string;
-};
-
-const EMPTY_FILTERS: Filters = { vehicle: "", prefecture: "", category: "", dateFrom: "", dateTo: "" };
+// ---------- Constants ----------
 
 const CATEGORY_OPTIONS: { value: string; label: string }[] = [
   { value: "meeting", label: "オフ会・ミーティング" },
   { value: "track",   label: "走行会" },
-  { value: "touring", label: "ツーリング" },
   { value: "show",    label: "展示・ショー" },
+  { value: "touring", label: "ツーリング" },
   { value: "regular", label: "定例MTG" },
 ];
 
-function categoryBadgeClass(category: string | null): string {
-  switch (category) {
-    case "meeting": return "bg-purple-100 text-purple-700";
-    case "track":   return "bg-red-100 text-red-700";
-    case "show":    return "bg-yellow-100 text-yellow-700";
-    case "touring": return "bg-teal-100 text-teal-700";
-    case "regular": return "bg-gray-100 text-gray-600";
-    default:        return "";
-  }
+const CATEGORY_TOGGLE: { value: string; label: string }[] = [
+  { value: "",        label: "すべて" },
+  { value: "meeting", label: "オフ会" },
+  { value: "track",   label: "走行会" },
+  { value: "show",    label: "展示" },
+  { value: "touring", label: "ツーリング" },
+  { value: "regular", label: "定例" },
+];
+
+const CATEGORY_BAR: Record<string, string> = {
+  meeting: "bg-purple-500",
+  track:   "bg-red-500",
+  show:    "bg-yellow-500",
+  touring: "bg-teal-500",
+  regular: "bg-slate-500",
+};
+
+const CATEGORY_BADGE: Record<string, { bg: string; text: string; border: string }> = {
+  meeting: { bg: "bg-purple-500/15", text: "text-purple-300", border: "border-purple-500/30" },
+  track:   { bg: "bg-red-500/15",    text: "text-red-300",    border: "border-red-500/30" },
+  show:    { bg: "bg-yellow-500/15", text: "text-yellow-300", border: "border-yellow-500/30" },
+  touring: { bg: "bg-teal-500/15",   text: "text-teal-300",   border: "border-teal-500/30" },
+  regular: { bg: "bg-slate-500/15",  text: "text-slate-300",  border: "border-slate-500/30" },
+};
+
+// ---------- Helpers ----------
+
+function categoryLabel(cat: string | null): string {
+  return CATEGORY_OPTIONS.find((o) => o.value === cat)?.label ?? "";
 }
 
-function categoryLabel(category: string | null): string {
-  return CATEGORY_OPTIONS.find((o) => o.value === category)?.label ?? "";
-}
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
+function formatShortDate(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
   const days = ["日", "月", "火", "水", "木", "金", "土"];
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${days[d.getDay()]}）`;
+  return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]})`;
 }
 
-function genreColor(genre: string | null): string {
-  switch (genre) {
-    case "ドレスアップ": return "bg-amber-100 text-amber-800";
-    case "旧車":         return "bg-stone-100 text-stone-700";
-    case "ミーティング": return "bg-blue-100 text-blue-800";
-    case "オフ会":       return "bg-green-100 text-green-800";
-    case "走行会":       return "bg-red-100 text-red-800";
-    default:             return "bg-gray-100 text-gray-600";
-  }
+function daysBadge(dateStr: string): { label: string; classes: string } | null {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateStr + "T00:00:00");
+  const diff = Math.floor((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return { label: "今日", classes: "bg-orange-500 text-white" };
+  if (diff === 1) return { label: "明日", classes: "bg-amber-400 text-amber-950 font-semibold" };
+  if (diff <= 7)  return { label: `あと${diff}日`, classes: "bg-sky-500/20 text-sky-300 border border-sky-500/30" };
+  return null;
 }
 
 function formatFrequency(freq: string | null): string {
-  switch (freq) {
-    case "weekly":    return "毎週";
-    case "monthly":   return "毎月";
-    case "irregular": return "不定期";
-    default: return freq ?? "";
-  }
+  if (freq === "weekly")    return "毎週";
+  if (freq === "monthly")   return "毎月";
+  if (freq === "irregular") return "不定期";
+  return freq ?? "";
 }
 
-function frequencyBadgeClass(freq: string | null): string {
-  switch (freq) {
-    case "weekly":    return "bg-blue-100 text-blue-700";
-    case "monthly":   return "bg-blue-50 text-blue-600";
-    case "irregular": return "bg-gray-100 text-gray-500";
-    default:          return "bg-gray-100 text-gray-500";
-  }
+// ---------- EventCard ----------
+
+function EventCard({ event }: { event: Event }) {
+  const bar   = event.category ? CATEGORY_BAR[event.category]   : null;
+  const badge = event.category ? CATEGORY_BADGE[event.category] : null;
+  const db    = daysBadge(event.event_date);
+  const navUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue || event.name)}`;
+
+  return (
+    <li className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+      {/* カテゴリカラーバー */}
+      {bar && <div className={`h-0.5 w-full ${bar}`} />}
+
+      <div className="px-4 py-3">
+        {/* 日付・バッジ行 */}
+        <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+          <span className="text-sky-400 text-sm font-semibold">{formatShortDate(event.event_date)}</span>
+          {db && (
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${db.classes}`}>
+              {db.label}
+            </span>
+          )}
+          {badge && event.category && event.category !== "unknown" && (
+            <span className={`text-xs px-2 py-0.5 rounded border font-medium ${badge.bg} ${badge.text} ${badge.border}`}>
+              {categoryLabel(event.category)}
+            </span>
+          )}
+          {event.recurring_id && (
+            <span className="text-xs px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/15 text-emerald-300 font-medium">
+              定期開催
+            </span>
+          )}
+        </div>
+
+        {/* イベント名 */}
+        <p className="text-white font-bold text-base leading-snug mb-2">{event.name}</p>
+
+        {/* 場所・車種 */}
+        <div className="space-y-0.5 mb-2 text-sm text-slate-400">
+          {(event.prefecture || event.venue) && (
+            <p>📍 {[event.prefecture, event.venue].filter(Boolean).join(" · ")}</p>
+          )}
+          {event.target_vehicle && (
+            <p>🚗 {event.target_vehicle}</p>
+          )}
+        </div>
+
+        {/* キーワードタグ */}
+        {event.keywords && event.keywords.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {event.keywords.slice(0, 3).map((kw, i) => (
+              <span key={i} className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                #{kw}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* ボタン行 */}
+        <div className="flex items-center gap-2">
+          {event.source_url ? (
+            <a
+              href={event.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 text-center text-sm font-medium bg-sky-600/20 text-sky-300 border border-sky-600/30 rounded-lg py-1.5 hover:bg-sky-600/30 transition-colors"
+            >
+              詳細を見る
+            </a>
+          ) : (
+            <span className="flex-1" />
+          )}
+          <a
+            href={navUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium bg-slate-800 text-slate-300 border border-slate-700 rounded-lg px-3 py-1.5 hover:bg-slate-700 transition-colors flex-shrink-0"
+          >
+            🗺️ ナビ
+          </a>
+        </div>
+
+        {/* 情報元 */}
+        {event.source_site && (
+          <p className="text-xs text-slate-600 mt-2">
+            情報元：
+            {event.source_site_url ? (
+              <a
+                href={event.source_site_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-slate-400 underline underline-offset-2"
+              >
+                {event.source_site}
+              </a>
+            ) : (
+              event.source_site
+            )}
+          </p>
+        )}
+      </div>
+    </li>
+  );
 }
+
+// ---------- RecurringCard ----------
+
+function RecurringCard({ ev }: { ev: RecurringEvent }) {
+  return (
+    <li className="bg-slate-900 rounded-xl border border-slate-800 border-l-2 border-l-sky-500 px-4 py-4">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <p className="text-white font-semibold text-sm leading-snug">{ev.name}</p>
+        {ev.frequency && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30 font-medium flex-shrink-0">
+            {formatFrequency(ev.frequency)}
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-0.5 mb-3 text-sm text-slate-400">
+        {(ev.prefecture || ev.venue) && (
+          <p>📍 {[ev.prefecture, ev.venue].filter(Boolean).join(" · ")}</p>
+        )}
+        {(ev.day_of_week || ev.time_of_day) && (
+          <p>📅 {[ev.day_of_week, ev.time_of_day].filter(Boolean).join("　")}</p>
+        )}
+        {ev.target_vehicle && (
+          <p>🚗 {ev.target_vehicle}</p>
+        )}
+      </div>
+
+      {ev.source_url && (
+        <a
+          href={ev.source_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-sky-400 hover:text-sky-300 transition-colors"
+        >
+          詳細・次回開催日を確認 →
+        </a>
+      )}
+    </li>
+  );
+}
+
+// ---------- Main Page ----------
 
 export default function Home() {
   const [tab, setTab] = useState<"events" | "recurring">("events");
 
-  // フリーワード検索
-  const [freeword, setFreeword] = useState("");
-
-  // イベント一覧
-  const [allEvents, setAllEvents] = useState<Event[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [prefectures, setPrefectures] = useState<string[]>([]);
-  const [vehicles, setVehicles] = useState<string[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [displayCount, setDisplayCount] = useState(30);
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-  const [form, setForm] = useState<Filters>(EMPTY_FILTERS);
-  const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
-
-  // 定期開催
+  // データ
+  const [allEvents, setAllEvents]         = useState<Event[]>([]);
+  const [loading, setLoading]             = useState(true);
   const [recurringEvents, setRecurringEvents] = useState<RecurringEvent[]>([]);
   const [recurringLoading, setRecurringLoading] = useState(true);
+  const [lastUpdated, setLastUpdated]     = useState<string | null>(null);
+  const [displayCount, setDisplayCount]   = useState(30);
+
+  // 動的セレクトオプション
+  const [vehicles, setVehicles]       = useState<string[]>([]);
+  const [prefectures, setPrefectures] = useState<string[]>([]);
+
+  // フィルター
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [freeword, setFreeword]     = useState("");
+  const [vehicle, setVehicle]       = useState("");
+  const [prefecture, setPrefecture] = useState("");
+  const [category, setCategory]     = useState("");
+  const [dateFrom, setDateFrom]     = useState("");
+  const [dateTo, setDateTo]         = useState("");
+
+  // 投稿モーダル
+  const [modalOpen, setModalOpen]       = useState(false);
+  const [submitText, setSubmitText]     = useState("");
+  const [submitting, setSubmitting]     = useState(false);
+  const [submitResult, setSubmitResult] = useState<"" | "success" | "error">("");
+  const [submitError, setSubmitError]   = useState("");
+
+  // useRef（将来用 / ログタイマー）
+  const logTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ---------- データ取得 ----------
 
   useEffect(() => {
+    const supabase = createClient();
+    const today = new Date().toISOString().split("T")[0];
+
     async function load() {
-      const today = new Date().toISOString().split("T")[0];
-      const { data } = await supabase
-        .from("events")
-        .select("*")
-        .gte("event_date", today)
-        .order("event_date", { ascending: true })
-        .limit(10000);
-      const loaded = data || [];
+      const [{ data: eventsData }, { data: recurringData }, { data: logData }] = await Promise.all([
+        supabase.from("events").select("*").gte("event_date", today).order("event_date", { ascending: true }),
+        supabase.from("recurring_events").select("*").order("name"),
+        supabase.from("crawl_logs").select("executed_at").order("executed_at", { ascending: false }).limit(1),
+      ]);
+
+      const loaded = eventsData || [];
       setAllEvents(loaded);
-      setEvents(loaded);
 
       const prefs = Array.from(
         new Set(loaded.map((e) => e.prefecture).filter(Boolean) as string[])
@@ -145,115 +307,82 @@ export default function Home() {
       ).sort();
       setVehicles(vehs);
 
-      const cats = CATEGORY_OPTIONS
-        .map((o) => o.value)
-        .filter((v) => loaded.some((e) => e.category === v));
-      setCategories(cats);
+      setLoading(false);
+      setRecurringEvents(recurringData || []);
+      setRecurringLoading(false);
 
-      const { data: maxData } = await supabase
-        .from("events")
-        .select("created_at")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-      if (maxData?.created_at) {
-        const d = new Date(maxData.created_at);
+      if (logData && logData.length > 0) {
+        const d = new Date(logData[0].executed_at);
         setLastUpdated(
           `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
         );
       }
-
-      setLoading(false);
     }
     load();
   }, []);
 
-  useEffect(() => {
-    async function loadRecurring() {
-      const { data } = await supabase
-        .from("recurring_events")
-        .select("*")
-        .order("name", { ascending: true });
-      setRecurringEvents(data || []);
-      setRecurringLoading(false);
-    }
-    loadRecurring();
-  }, []);
+  // ---------- フィルタロジック ----------
 
+  const filteredEvents = allEvents.filter((e) => {
+    if (freeword) {
+      const q = freeword.toLowerCase();
+      const hit =
+        e.name?.toLowerCase().includes(q) ||
+        e.venue?.toLowerCase().includes(q) ||
+        e.prefecture?.toLowerCase().includes(q) ||
+        e.keywords?.some((k) => k.toLowerCase().includes(q));
+      if (!hit) return false;
+    }
+    if (vehicle    && e.target_vehicle !== vehicle)    return false;
+    if (prefecture && e.prefecture     !== prefecture) return false;
+    if (category   && e.category       !== category)   return false;
+    if (dateFrom   && e.event_date < dateFrom)         return false;
+    if (dateTo     && e.event_date > dateTo)           return false;
+    return true;
+  });
+
+  const isFiltered = !!(freeword || vehicle || prefecture || category || dateFrom || dateTo);
+
+  // フィルター変更時に表示件数リセット
   useEffect(() => {
-    let result = allEvents;
-    if (freeword.trim()) {
-      const kw = freeword.trim().toLowerCase();
-      result = result.filter((e) =>
-        [e.name, e.venue, e.prefecture, e.target_vehicle, e.source_site]
-          .some((f) => f?.toLowerCase().includes(kw)) ||
-        (e.keywords ?? []).some((k) => k.toLowerCase().includes(kw))
-      );
-    }
-    if (applied.vehicle) {
-      result = result.filter((e) => e.target_vehicle?.trim() === applied.vehicle.trim());
-    }
-    if (applied.prefecture === "__null__") {
-      result = result.filter((e) => e.prefecture === null);
-    } else if (applied.prefecture) {
-      result = result.filter((e) => e.prefecture === applied.prefecture);
-    }
-    if (applied.category) {
-      result = result.filter((e) => e.category === applied.category);
-    }
-    if (applied.dateFrom) {
-      result = result.filter((e) => e.event_date >= applied.dateFrom);
-    }
-    if (applied.dateTo) {
-      result = result.filter((e) => e.event_date <= applied.dateTo);
-    }
-    setEvents(result);
     setDisplayCount(30);
-  }, [applied, allEvents, freeword]);
+  }, [freeword, vehicle, prefecture, category, dateFrom, dateTo]);
 
-  // 検索ログ送信（500ms debounce）
-  const logTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // ---------- 検索ログ（debounce 500ms） ----------
+
   useEffect(() => {
     if (logTimerRef.current) clearTimeout(logTimerRef.current);
+    if (!isFiltered) return;
     logTimerRef.current = setTimeout(async () => {
-      const hasFilter =
-        freeword.trim() || applied.vehicle || applied.prefecture ||
-        applied.category || applied.dateFrom || applied.dateTo;
-      if (!hasFilter) return;
       try {
+        const supabase = createClient();
         await supabase.from("search_logs").insert({
           freeword:     freeword.trim() || null,
-          vehicle:      applied.vehicle || null,
-          prefecture:   applied.prefecture || null,
-          category:     applied.category || null,
-          date_from:    applied.dateFrom || null,
-          date_to:      applied.dateTo || null,
-          result_count: events.length,
+          vehicle:      vehicle      || null,
+          prefecture:   prefecture   || null,
+          category:     category     || null,
+          date_from:    dateFrom     || null,
+          date_to:      dateTo       || null,
+          result_count: filteredEvents.length,
         });
-      } catch (_) {}
+      } catch {
+        // ignore log errors
+      }
     }, 500);
     return () => { if (logTimerRef.current) clearTimeout(logTimerRef.current); };
-  }, [freeword, applied, events.length]);
+  }, [freeword, vehicle, prefecture, category, dateFrom, dateTo, filteredEvents.length, isFiltered]);
 
-  function handleSearch() {
-    setApplied({ ...form });
-  }
+  // ---------- ハンドラ ----------
 
   function handleReset() {
     setFreeword("");
-    setForm(EMPTY_FILTERS);
-    setApplied(EMPTY_FILTERS);
+    setVehicle("");
+    setPrefecture("");
+    setCategory("");
+    setDateFrom("");
+    setDateTo("");
+    setDisplayCount(30);
   }
-
-  const isFiltered =
-    applied.vehicle || applied.prefecture || applied.category || applied.dateFrom || applied.dateTo;
-
-  // 投稿モーダル
-  const [modalOpen, setModalOpen] = useState(false);
-  const [submitText, setSubmitText] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submitResult, setSubmitResult] = useState<"" | "success" | "error">("");
-  const [submitError, setSubmitError] = useState("");
 
   async function handleSubmit() {
     if (!submitText.trim()) return;
@@ -283,326 +412,227 @@ export default function Home() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-zinc-50">
+  // ---------- JSX ----------
 
-      {/* ヘッダー */}
-      <header className="bg-white border-b border-zinc-200 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-baseline justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-zinc-900 tracking-tight">
-              二輪四輪オフマップ
-            </h1>
-            <p className="text-xs text-zinc-400 mt-0.5">全国の車イベント情報</p>
-          </div>
-          <div className="flex items-start gap-3">
+  return (
+    <div className="min-h-screen bg-slate-950 text-white">
+
+      {/* ===== ヘッダー ===== */}
+      <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur border-b border-slate-800">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <h1 className="text-base font-bold text-white tracking-tight flex-shrink-0">
+            2輪4輪 offmap
+          </h1>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/spots"
+              className="text-sm font-medium px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 hover:bg-emerald-600/30 transition-colors flex-shrink-0"
+            >
+              オフ会メーカー
+            </Link>
             <button
               onClick={() => { setModalOpen(true); setSubmitResult(""); setSubmitError(""); }}
-              className="text-sm font-semibold bg-blue-600 text-white rounded-lg px-5 py-2.5 shadow-md hover:bg-blue-500 hover:shadow-lg transition-all duration-200 flex-shrink-0"
+              className="text-sm font-medium px-3 py-1.5 rounded-lg bg-sky-600/20 text-sky-400 border border-sky-600/30 hover:bg-sky-600/30 transition-colors flex-shrink-0"
             >
-              イベントを投稿
+              投稿
             </button>
-            <div className="text-right">
-            <span className="text-xs text-zinc-400">
-              {tab === "events"
-                ? (loading ? "読込中..." : `${events.length}件${isFiltered ? "（絞込中）" : ""}`)
-                : (recurringLoading ? "読込中..." : `${recurringEvents.length}件`)}
-            </span>
-            {lastUpdated && (
-              <p className="text-xs text-gray-400 mt-0.5">最終更新：{lastUpdated}</p>
-            )}
-            </div>
           </div>
         </div>
+      </header>
 
-        {/* タブ */}
-        <div className="max-w-2xl mx-auto px-4 pb-3 border-t border-zinc-100 pt-2 flex gap-2">
+      {/* ===== ヒーロー ===== */}
+      <section className="relative overflow-hidden px-4 py-10 text-center">
+        {/* グロー背景 */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-96 h-96 bg-sky-600/10 rounded-full blur-3xl" />
+        </div>
+
+        <div className="relative">
+          <h1 className="text-3xl font-black tracking-tight mb-2">
+            2輪4輪 <span className="text-sky-400">offmap</span>
+          </h1>
+          <p className="text-slate-400 text-sm mb-5">はじめてのオフ会が、すぐ見つかる。</p>
+
+          <div className="flex flex-col items-center gap-1 text-sm text-slate-500 mb-6">
+            <span>✓ 全国のイベントを自動収集</span>
+            <span>✓ SNS登録不要</span>
+            <span>✓ 無料</span>
+          </div>
+
+          <button
+            onClick={() => setFilterOpen((v) => !v)}
+            className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors"
+          >
+            {filterOpen ? "🔼 絞り込みを閉じる" : "🔽 条件を絞り込む"}
+          </button>
+
+          {lastUpdated && (
+            <p className="text-xs text-slate-600 mt-3">最終更新：{lastUpdated}</p>
+          )}
+        </div>
+      </section>
+
+      {/* ===== フィルターパネル ===== */}
+      {filterOpen && (
+        <div className="max-w-2xl mx-auto px-4 pb-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
+
+            {/* フリーワード */}
+            <input
+              type="text"
+              value={freeword}
+              onChange={(e) => setFreeword(e.target.value)}
+              placeholder="キーワードで検索（例：ロードスター、筑波、走行会）"
+              className="w-full text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+            />
+
+            {/* 車種・エリア */}
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                value={vehicle}
+                onChange={(e) => setVehicle(e.target.value)}
+                className="text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+              >
+                <option value="">車種：すべて</option>
+                {vehicles.map((v) => <option key={v} value={v}>{v}</option>)}
+              </select>
+              <select
+                value={prefecture}
+                onChange={(e) => setPrefecture(e.target.value)}
+                className="text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+              >
+                <option value="">エリア：すべて</option>
+                {prefectures.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+
+            {/* カテゴリトグル */}
+            <div className="flex flex-wrap gap-1.5">
+              {CATEGORY_TOGGLE.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setCategory(opt.value)}
+                  className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
+                    category === opt.value
+                      ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
+                      : "bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {/* 日付範囲 */}
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+              />
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+              />
+            </div>
+
+            <button
+              onClick={handleReset}
+              className="w-full text-sm text-slate-400 border border-slate-700 rounded-lg py-2 hover:bg-slate-800 transition-colors"
+            >
+              条件をリセット
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ===== タブ（sticky） ===== */}
+      <div className="sticky top-12 z-20 bg-slate-950/90 backdrop-blur border-b border-slate-800">
+        <div className="max-w-2xl mx-auto px-4 flex">
           {(["events", "recurring"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-                tab === t
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              className={`flex-1 py-3 text-sm font-medium relative transition-colors ${
+                tab === t ? "text-sky-400" : "text-slate-500 hover:text-slate-300"
               }`}
             >
               {t === "events" ? "イベント一覧" : "定期開催"}
+              {tab === t && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-400 rounded-full" />
+              )}
             </button>
           ))}
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-2xl mx-auto px-4 py-4 space-y-4">
+      {/* ===== メインコンテンツ ===== */}
+      <main className="max-w-2xl mx-auto px-4 py-4">
 
-        {/* ===== イベント一覧タブ ===== */}
+        {/* 件数 + 解除ボタン */}
+        {tab === "events" && !loading && (
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm text-slate-400">
+              {isFiltered
+                ? `${filteredEvents.length}件 / 全${allEvents.length}件`
+                : `${filteredEvents.length}件のイベント`}
+            </p>
+            {isFiltered && (
+              <button
+                onClick={handleReset}
+                className="text-xs text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1"
+              >
+                ✕ 絞り込みを解除
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ----- イベント一覧タブ ----- */}
         {tab === "events" && (
           <>
-            {/* フィルターフォーム */}
-            <div className="bg-white rounded-xl border border-zinc-200 px-4 py-4 space-y-3">
-              <div>
-                <input
-                  type="text"
-                  value={freeword}
-                  onChange={(e) => setFreeword(e.target.value)}
-                  placeholder="キーワードで検索（例：ロードスター、筑波、走行会）"
-                  className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-zinc-600 mb-1">車種</label>
-                <select
-                  value={form.vehicle}
-                  onChange={(e) => setForm((f) => ({ ...f, vehicle: e.target.value }))}
-                  className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
-                >
-                  <option value="">すべて</option>
-                  {vehicles.map((v) => (
-                    <option key={v} value={v}>{v}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-600 mb-1">エリア</label>
-                <select
-                  value={form.prefecture}
-                  onChange={(e) => setForm((f) => ({ ...f, prefecture: e.target.value }))}
-                  className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
-                >
-                  <option value="">すべて</option>
-                  <option value="__null__">エリア情報なし</option>
-                  {prefectures.map((p) => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
-              </div>
-
-              {categories.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1">カテゴリ</label>
-                  <select
-                    value={form.category}
-                    onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                    className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
-                  >
-                    <option value="">すべて</option>
-                    {categories.map((c) => (
-                      <option key={c} value={c}>{categoryLabel(c)}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1">開始日</label>
-                  <input
-                    type="date"
-                    value={form.dateFrom}
-                    onChange={(e) => setForm((f) => ({ ...f, dateFrom: e.target.value }))}
-                    className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-zinc-600 mb-1">終了日</label>
-                  <input
-                    type="date"
-                    value={form.dateTo}
-                    onChange={(e) => setForm((f) => ({ ...f, dateTo: e.target.value }))}
-                    className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={handleSearch}
-                  className="flex-1 bg-blue-600 text-white text-sm font-medium rounded-lg py-2 hover:bg-blue-700 transition-colors"
-                >
-                  検索
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="px-4 text-sm text-gray-600 border border-gray-300 rounded-lg py-2 hover:bg-gray-50 transition-colors"
-                >
-                  リセット
-                </button>
-              </div>
-            </div>
-
-            {/* リスト */}
             {loading ? (
-              <div className="flex items-center justify-center py-20">
-                <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
+              <div className="flex justify-center py-20">
+                <div className="w-5 h-5 border-2 border-slate-700 border-t-sky-400 rounded-full animate-spin" />
               </div>
-            ) : events.length === 0 ? (
-              <p className="text-center text-zinc-400 py-20 text-sm">
-                イベント情報がありません
-              </p>
+            ) : filteredEvents.length === 0 ? (
+              <p className="text-center text-slate-500 py-20 text-sm">イベント情報がありません</p>
             ) : (
               <ul className="space-y-2">
-                {events.slice(0, displayCount).map((event) => (
-                  <li
-                    key={event.id}
-                    className="bg-white rounded-xl border border-zinc-200 px-4 py-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-base font-bold text-gray-900 leading-snug truncate">
-                          {event.name}
-                        </p>
-                        <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                          <span className="text-xs font-medium text-blue-600 flex-shrink-0">
-                            {formatDate(event.event_date)}
-                          </span>
-                          {event.category && event.category !== "unknown" && (
-                            <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${categoryBadgeClass(event.category)}`}>
-                              {categoryLabel(event.category)}
-                            </span>
-                          )}
-                          {event.prefecture && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-500 text-white flex-shrink-0">
-                              {event.prefecture}
-                            </span>
-                          )}
-                          {event.recurring_id && (
-                            <span className="text-xs px-1.5 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-500 flex-shrink-0">
-                              定期開催
-                            </span>
-                          )}
-                        </div>
-                        {event.venue && (
-                          <p className="text-xs text-zinc-400 mt-0.5 truncate">
-                            {event.venue}
-                          </p>
-                        )}
-                        {event.source_site && (
-                          <p className="text-xs text-gray-400 mt-1.5">
-                            情報元：
-                            {event.source_site_url ? (
-                              <a
-                                href={event.source_site_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:text-gray-500 underline underline-offset-2"
-                              >
-                                {event.source_site}
-                              </a>
-                            ) : (
-                              event.source_site
-                            )}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                        {event.target_vehicle && (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-500 text-white">
-                            {event.target_vehicle}
-                          </span>
-                        )}
-                        {event.source_url && (
-                          <a
-                            href={event.source_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-500 hover:text-blue-700"
-                          >
-                            詳細 →
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </li>
+                {filteredEvents.slice(0, displayCount).map((event) => (
+                  <EventCard key={event.id} event={event} />
                 ))}
               </ul>
             )}
-            {!loading && events.length > displayCount && (
-              <div className="flex justify-center pt-2">
+
+            {!loading && filteredEvents.length > displayCount && (
+              <div className="flex justify-center pt-4">
                 <button
                   onClick={() => setDisplayCount((prev) => prev + 30)}
-                  className="bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg px-6 py-3 text-sm"
+                  className="text-sm text-slate-400 border border-slate-700 rounded-lg px-6 py-2.5 hover:bg-slate-800 transition-colors"
                 >
-                  もっと読み込む（残り{events.length - displayCount}件）
+                  もっと読み込む（残り{filteredEvents.length - displayCount}件）
                 </button>
               </div>
             )}
           </>
         )}
 
-        {/* ===== 定期開催タブ ===== */}
+        {/* ----- 定期開催タブ ----- */}
         {tab === "recurring" && (
           <>
             {recurringLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
+              <div className="flex justify-center py-20">
+                <div className="w-5 h-5 border-2 border-slate-700 border-t-sky-400 rounded-full animate-spin" />
               </div>
             ) : recurringEvents.length === 0 ? (
-              <p className="text-center text-zinc-400 py-20 text-sm">
-                定期開催イベントがありません
-              </p>
+              <p className="text-center text-slate-500 py-20 text-sm">定期開催イベントがありません</p>
             ) : (
-              <ul className="space-y-3">
-                {recurringEvents.map((ev) => (
-                  <li
-                    key={ev.id}
-                    className="bg-white rounded-xl border border-zinc-200 border-l-4 border-l-blue-400 px-4 py-4"
-                  >
-                    {/* イベント名 + 頻度バッジ */}
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <p className="text-sm font-semibold text-blue-800 leading-snug">
-                        {ev.name}
-                      </p>
-                      {ev.frequency && (
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${frequencyBadgeClass(ev.frequency)}`}>
-                          {formatFrequency(ev.frequency)}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* 開催情報グリッド */}
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-zinc-500 mb-2">
-                      {ev.organizer && (
-                        <div>
-                          <span className="text-zinc-400">主催：</span>{ev.organizer}
-                        </div>
-                      )}
-                      {(ev.day_of_week || ev.time_of_day) && (
-                        <div>
-                          <span className="text-zinc-400">日時：</span>
-                          {[ev.day_of_week, ev.time_of_day].filter(Boolean).join(" ")}
-                        </div>
-                      )}
-                      {(ev.prefecture || ev.venue) && (
-                        <div className="col-span-2">
-                          <span className="text-zinc-400">場所：</span>
-                          {[ev.prefecture, ev.venue].filter(Boolean).join(" · ")}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 対象車種 + リンク */}
-                    <div className="flex items-center justify-between gap-2 mt-1">
-                      {ev.target_vehicle ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">
-                          {ev.target_vehicle}
-                        </span>
-                      ) : (
-                        <span />
-                      )}
-                      {ev.source_url && (
-                        <a
-                          href={ev.source_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-500 hover:text-blue-700 flex-shrink-0"
-                        >
-                          詳細・参加はこちら →
-                        </a>
-                      )}
-                    </div>
-                  </li>
-                ))}
+              <ul className="space-y-2">
+                {recurringEvents.map((ev) => <RecurringCard key={ev.id} ev={ev} />)}
               </ul>
             )}
           </>
@@ -610,52 +640,78 @@ export default function Home() {
 
       </main>
 
-      {/* 投稿モーダル */}
+      {/* ===== 投稿モーダル（ボトムシート） ===== */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 space-y-4">
-            <h2 className="text-base font-semibold text-zinc-800">イベントを投稿する</h2>
-            <p className="text-sm text-gray-700 font-medium">
-              SNSの告知文やイベント情報をそのままコピペするだけでOKです。AIが自動解析して登録します。日時・場所の情報が含まれていると精度が上がります。
-            </p>
-            <textarea
-              value={submitText}
-              onChange={(e) => setSubmitText(e.target.value)}
-              rows={8}
-              placeholder={`例）\n【ロードスターミーティング】\n日時：4月20日（日）10:00〜\n場所：道の駅 富士川楽座（静岡県富士市）\n対象：ロードスター全型式\n参加費：無料・事前申込不要\n主催：おはよう静岡ロードスター\n\nSNSの投稿文やイベント告知をそのままコピペしてもOKです。`}
-              className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 resize-none"
-            />
-            {submitResult === "success" && (
-              <p className="text-sm text-green-600 font-medium">登録しました！</p>
-            )}
-            {submitResult === "error" && (
-              <p className="text-sm text-red-500">{submitError}</p>
-            )}
-            <div className="flex gap-2 justify-end">
+        <div
+          className="fixed inset-0 z-50 bg-black/60"
+          onClick={() => { setModalOpen(false); setSubmitText(""); setSubmitResult(""); }}
+        >
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 rounded-t-2xl p-6 space-y-4 max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-white">イベントを投稿する</h2>
               <button
                 onClick={() => { setModalOpen(false); setSubmitText(""); setSubmitResult(""); }}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="text-slate-400 hover:text-white text-xl leading-none transition-colors"
               >
-                キャンセル
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting || !submitText.trim()}
-                className="px-4 py-2 text-sm bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {submitting && (
-                  <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                )}
-                送信する
+                ✕
               </button>
             </div>
+
+            <p className="text-sm text-slate-400">
+              SNSの告知文やイベント情報をそのままコピペするだけでOKです。AIが自動解析して登録します。
+            </p>
+
+            {submitResult === "success" ? (
+              <p className="text-center text-emerald-400 font-medium py-6">✅ 投稿を受け付けました</p>
+            ) : (
+              <>
+                <textarea
+                  value={submitText}
+                  onChange={(e) => setSubmitText(e.target.value)}
+                  rows={6}
+                  placeholder={`例）\n【ロードスターミーティング】\n日時：4月20日（日）10:00〜\n場所：道の駅 富士川楽座（静岡県富士市）\n対象：ロードスター全型式\n参加費：無料・事前申込不要`}
+                  className="w-full text-sm bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40 resize-none"
+                />
+                {submitResult === "error" && (
+                  <p className="text-sm text-red-400">{submitError}</p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setModalOpen(false); setSubmitText(""); setSubmitResult(""); }}
+                    className="flex-1 text-sm text-slate-400 border border-slate-700 rounded-lg py-2.5 hover:bg-slate-800 transition-colors"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={submitting || !submitText.trim()}
+                    className="flex-1 text-sm bg-sky-600 text-white font-medium rounded-lg py-2.5 hover:bg-sky-500 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {submitting && (
+                      <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    )}
+                    送信する
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
 
-      {/* フッター */}
-      <footer className="max-w-2xl mx-auto px-4 py-8 text-center">
-        <p className="text-xs text-zinc-300">自動更新 · 二輪四輪オフマップ</p>
+      {/* ===== フッター ===== */}
+      <footer className="max-w-2xl mx-auto px-4 py-8 text-center space-y-1">
+        <p className="text-sm font-semibold text-slate-500">2輪4輪 offmap</p>
+        <p className="text-xs text-slate-600">© 2026 24offmap.jp · 情報の正確性は保証しません</p>
+        <a
+          href="#"
+          className="text-xs text-slate-600 hover:text-slate-400 underline underline-offset-2 transition-colors"
+        >
+          掲載削除・修正依頼
+        </a>
       </footer>
 
     </div>
