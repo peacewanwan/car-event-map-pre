@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { APIProvider, Map as GoogleMap, AdvancedMarker, InfoWindow } from '@vis.gl/react-google-maps'
+import { APIProvider, Map as GoogleMap, AdvancedMarker, InfoWindow, useMap } from '@vis.gl/react-google-maps'
 import { createClient } from '@/lib/supabase/client'
 
 type Spot = {
@@ -39,6 +39,19 @@ function formatTime(dateStr: string) {
 function formatMonthDay(dateStr: string) {
   const d = new Date(dateStr)
   return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+// ---------- MapGeolocator ----------
+
+function MapGeolocator({ target }: { target: { lat: number; lng: number } | null }) {
+  const map = useMap()
+  useEffect(() => {
+    if (map && target) {
+      map.panTo(target)
+      map.setZoom(11)
+    }
+  }, [map, target])
+  return null
 }
 
 // ---------- SpotCard ----------
@@ -463,8 +476,28 @@ export default function SpotsPage() {
   const [tab, setTab] = useState<'list' | 'map'>('list')
   const [activeMapSpot, setActiveMapSpot] = useState<SpotWithCounts | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [geoTarget, setGeoTarget] = useState<{ lat: number; lng: number } | null>(null)
+  const [geoLoading, setGeoLoading] = useState(false)
 
   useEffect(() => setMounted(true), [])
+
+  function handleGeolocate() {
+    if (!navigator.geolocation) {
+      alert('位置情報を取得できませんでした')
+      return
+    }
+    setGeoLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeoTarget({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setGeoLoading(false)
+      },
+      () => {
+        alert('位置情報を取得できませんでした')
+        setGeoLoading(false)
+      }
+    )
+  }
 
   useEffect(() => {
     async function load() {
@@ -644,59 +677,91 @@ export default function SpotsPage() {
 
       {/* 地図タブ */}
       {tab === 'map' && mounted && (
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 relative">
           {loading ? (
             <div className="flex justify-center items-center h-full">
               <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
             </div>
           ) : (
-            <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
-              <GoogleMap
-                mapId="DEMO_MAP_ID"
-                defaultCenter={{ lat: 36.5, lng: 137.0 }}
-                defaultZoom={6}
-                style={{ width: '100%', height: '100%' }}
-                onClick={() => setActiveMapSpot(null)}
-              >
-                {spotsWithCounts.map((spot) => (
-                  <AdvancedMarker
-                    key={spot.id}
-                    position={{ lat: spot.lat, lng: spot.lng }}
-                    onClick={() => setActiveMapSpot(spot)}
-                  >
-                    {spot.nowCount > 0 ? (
-                      <div className="w-7 h-7 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shadow-md ring-2 ring-white">
-                        {spot.nowCount}
-                      </div>
-                    ) : (
-                      <div className="w-3.5 h-3.5 rounded-full bg-zinc-400 shadow ring-1 ring-white" />
-                    )}
-                  </AdvancedMarker>
-                ))}
+            <>
+              {/* 都道府県フィルター overlay */}
+              <div className="absolute top-3 left-3 z-10">
+                <select
+                  value={selectedPref}
+                  onChange={(e) => setSelectedPref(e.target.value)}
+                  className="bg-white rounded-lg shadow px-3 py-1.5 text-sm focus:outline-none"
+                >
+                  <option value="">都道府県：すべて</option>
+                  {prefectures.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
 
-                {activeMapSpot && (
-                  <InfoWindow
-                    position={{ lat: activeMapSpot.lat, lng: activeMapSpot.lng }}
-                    onCloseClick={() => setActiveMapSpot(null)}
-                    pixelOffset={[0, -20]}
-                  >
-                    <div className="space-y-1 min-w-[160px]">
-                      <p className="font-bold text-sm">{activeMapSpot.name}</p>
-                      {activeMapSpot.prefecture && (
-                        <p className="text-xs text-gray-500">{activeMapSpot.prefecture}</p>
+              {/* 現在地ボタン overlay */}
+              <div className="absolute top-3 right-3 z-10">
+                <button
+                  onClick={handleGeolocate}
+                  disabled={geoLoading}
+                  className="bg-white rounded-lg shadow px-3 py-1.5 text-sm disabled:opacity-50"
+                >
+                  {geoLoading ? '取得中...' : '現在地'}
+                </button>
+              </div>
+
+              <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
+                <GoogleMap
+                  mapId="DEMO_MAP_ID"
+                  defaultCenter={{ lat: 36.5, lng: 137.0 }}
+                  defaultZoom={6}
+                  style={{ width: '100%', height: '100%' }}
+                  onClick={() => setActiveMapSpot(null)}
+                >
+                  <MapGeolocator target={geoTarget} />
+
+                  {(selectedPref
+                    ? spotsWithCounts.filter((s) => s.prefecture === selectedPref)
+                    : spotsWithCounts
+                  ).map((spot) => (
+                    <AdvancedMarker
+                      key={spot.id}
+                      position={{ lat: spot.lat, lng: spot.lng }}
+                      onClick={() => setActiveMapSpot(spot)}
+                    >
+                      {spot.nowCount > 0 ? (
+                        <div className="w-9 h-9 rounded-full bg-red-500 text-white text-sm font-bold flex items-center justify-center shadow-md ring-2 ring-white">
+                          {spot.nowCount}
+                        </div>
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-zinc-400 shadow ring-1 ring-white" />
                       )}
-                      {activeMapSpot.category && (
-                        <p className="text-xs text-gray-500">{activeMapSpot.category}</p>
-                      )}
-                      <div className="flex gap-2 pt-0.5">
-                        <span className="text-xs text-red-600 font-medium">🔴 今{activeMapSpot.nowCount}人</span>
-                        <span className="text-xs text-blue-600 font-medium">📅 今月{activeMapSpot.planCount}人</span>
+                    </AdvancedMarker>
+                  ))}
+
+                  {activeMapSpot && (
+                    <InfoWindow
+                      position={{ lat: activeMapSpot.lat, lng: activeMapSpot.lng }}
+                      onCloseClick={() => setActiveMapSpot(null)}
+                      pixelOffset={[0, -20]}
+                    >
+                      <div className="space-y-1 min-w-[160px]">
+                        <p className="font-bold text-sm">{activeMapSpot.name}</p>
+                        {activeMapSpot.prefecture && (
+                          <p className="text-xs text-gray-500">{activeMapSpot.prefecture}</p>
+                        )}
+                        {activeMapSpot.category && (
+                          <p className="text-xs text-gray-500">{activeMapSpot.category}</p>
+                        )}
+                        <div className="flex gap-2 pt-0.5">
+                          <span className="text-xs text-red-600 font-medium">🔴 今{activeMapSpot.nowCount}人</span>
+                          <span className="text-xs text-blue-600 font-medium">📅 今月{activeMapSpot.planCount}人</span>
+                        </div>
                       </div>
-                    </div>
-                  </InfoWindow>
-                )}
-              </GoogleMap>
-            </APIProvider>
+                    </InfoWindow>
+                  )}
+                </GoogleMap>
+              </APIProvider>
+            </>
           )}
         </div>
       )}
