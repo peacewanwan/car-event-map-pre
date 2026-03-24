@@ -27,12 +27,6 @@ type SpotWithCounts = Spot & {
   planCount: number
 }
 
-function vehicleLabel(v: string) {
-  if (v === 'car') return '車'
-  if (v === 'bike') return 'バイク'
-  if (v === 'both') return '車・バイク'
-  return v
-}
 
 function formatTime(dateStr: string) {
   const d = new Date(dateStr)
@@ -54,13 +48,13 @@ function SpotCard({ spot }: { spot: SpotWithCounts }) {
   // ナウ登録フォーム
   const [showNowForm, setShowNowForm] = useState(false)
   const [nowNickname, setNowNickname] = useState('')
-  const [nowVehicle, setNowVehicle] = useState('car')
+  const [nowVehicle, setNowVehicle] = useState('')
   const [submittingNow, setSubmittingNow] = useState(false)
 
   // 予定登録フォーム
   const [showPlanForm, setShowPlanForm] = useState(false)
   const [planNickname, setPlanNickname] = useState('')
-  const [planVehicle, setPlanVehicle] = useState('car')
+  const [planVehicle, setPlanVehicle] = useState('')
   const [planDateTime, setPlanDateTime] = useState('')
   const [submittingPlan, setSubmittingPlan] = useState(false)
 
@@ -273,7 +267,7 @@ function SpotCard({ spot }: { spot: SpotWithCounts }) {
                     {nowCheckins.map((c) => (
                       <li key={c.id} className="text-xs flex gap-2 text-zinc-700">
                         <span className="font-medium">{c.nickname}</span>
-                        <span className="text-zinc-400">{vehicleLabel(c.vehicle_type)}</span>
+                        <span className="text-zinc-400">{c.vehicle_type}</span>
                         <span className="text-zinc-400">{formatTime(c.created_at)}〜</span>
                       </li>
                     ))}
@@ -296,15 +290,13 @@ function SpotCard({ spot }: { spot: SpotWithCounts }) {
                       onChange={(e) => setNowNickname(e.target.value)}
                       className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300"
                     />
-                    <select
+                    <input
+                      type="text"
+                      placeholder="車種（例：ロードスター）"
                       value={nowVehicle}
                       onChange={(e) => setNowVehicle(e.target.value)}
-                      className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
-                    >
-                      <option value="car">車</option>
-                      <option value="bike">バイク</option>
-                      <option value="both">車・バイク</option>
-                    </select>
+                      className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                    />
                     <div className="flex gap-2">
                       <button
                         onClick={handleNowCheckin}
@@ -385,7 +377,7 @@ function SpotCard({ spot }: { spot: SpotWithCounts }) {
                         {selectedDayPlans.map((c) => (
                           <li key={c.id} className="text-xs text-blue-800 flex gap-2">
                             <span className="font-medium">{c.nickname}</span>
-                            <span>{vehicleLabel(c.vehicle_type)}</span>
+                            <span>{c.vehicle_type}</span>
                             {c.planned_at && <span>{formatMonthDay(c.planned_at)}</span>}
                           </li>
                         ))}
@@ -410,15 +402,13 @@ function SpotCard({ spot }: { spot: SpotWithCounts }) {
                       onChange={(e) => setPlanNickname(e.target.value)}
                       className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300"
                     />
-                    <select
+                    <input
+                      type="text"
+                      placeholder="車種（例：ロードスター）"
                       value={planVehicle}
                       onChange={(e) => setPlanVehicle(e.target.value)}
-                      className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
-                    >
-                      <option value="car">車</option>
-                      <option value="bike">バイク</option>
-                      <option value="both">車・バイク</option>
-                    </select>
+                      className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                    />
                     <input
                       type="datetime-local"
                       value={planDateTime}
