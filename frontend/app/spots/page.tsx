@@ -239,32 +239,30 @@ function SpotCard({ spot, openSpotId }: { spot: SpotWithCounts; openSpotId: numb
     <div className="bg-white rounded-xl border border-zinc-200">
       {/* カードヘッダー（クリックでアコーディオン） */}
       <button
-        className="w-full text-left px-4 py-3 flex items-center justify-between gap-2"
+        className="w-full text-left px-4 py-3"
         onClick={() => setOpen(!open)}
       >
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-zinc-900 truncate">{spot.name}</p>
-          <div className="flex flex-wrap gap-1 mt-0.5">
-            {spot.prefecture && (
-              <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
-                {spot.prefecture}
-              </span>
-            )}
-            {spot.category && (
-              <span className="text-xs px-1.5 py-0.5 bg-zinc-100 text-zinc-600 rounded">
-                {spot.category}
-              </span>
-            )}
-          </div>
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <p className="font-semibold text-zinc-900">{spot.name}</p>
+          <span className="text-zinc-400 text-xs flex-shrink-0">{open ? '▲' : '▼'}</span>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded-full font-medium whitespace-nowrap">
+        <div className="flex flex-wrap gap-1">
+          {spot.prefecture && (
+            <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
+              {spot.prefecture}
+            </span>
+          )}
+          {spot.category && (
+            <span className="text-xs px-1.5 py-0.5 bg-zinc-100 text-zinc-600 rounded">
+              {spot.category}
+            </span>
+          )}
+          <span className="text-xs px-2 py-0.5 bg-red-50 text-red-600 rounded-full font-medium">
             🔴 今{spot.nowCount}人
           </span>
-          <span className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-full font-medium whitespace-nowrap">
+          <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full font-medium">
             📅 今月{spot.planCount}人
           </span>
-          <span className="text-zinc-400 text-xs">{open ? '▲' : '▼'}</span>
         </div>
       </button>
 
@@ -761,25 +759,24 @@ export default function SpotsPage() {
                   style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 30, background: '#fff', borderRadius: '12px', boxShadow: '0 4px 16px rgba(0,0,0,0.18)', padding: '14px 16px', minWidth: '200px', maxWidth: '280px' }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                    <p style={{ fontWeight: 700, fontSize: '14px', margin: 0, flex: 1 }}>{activeMapSpot.name}</p>
+                    <button
+                      onClick={() => handleNowButtonFromMap(activeMapSpot)}
+                      style={{ background: 'none', border: 'none', padding: 0, fontWeight: 700, fontSize: '14px', cursor: 'pointer', color: '#111827', textAlign: 'left', flex: 1, textDecoration: 'underline', textDecorationColor: '#d1d5db' }}
+                    >
+                      {activeMapSpot.name}
+                    </button>
                     <button onClick={() => setActiveMapSpot(null)} style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#9ca3af', marginLeft: '8px', padding: 0, lineHeight: 1 }}>✕</button>
                   </div>
                   {activeMapSpot.prefecture && (
                     <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 4px' }}>{activeMapSpot.prefecture}</p>
                   )}
                   {activeMapSpot.category && (
-                    <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 6px' }}>{activeMapSpot.category}</p>
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 4px' }}>{activeMapSpot.category}</p>
                   )}
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
                     <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: 500 }}>🔴 今{activeMapSpot.nowCount}人</span>
                     <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: 500 }}>📅 今月{activeMapSpot.planCount}人</span>
                   </div>
-                  <button
-                    onClick={() => handleNowButtonFromMap(activeMapSpot)}
-                    style={{ width: '100%', fontSize: '13px', fontWeight: 600, background: '#EF4444', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 0', cursor: 'pointer' }}
-                  >
-                    ここにいるナウ
-                  </button>
                 </div>
               )}
             </>
