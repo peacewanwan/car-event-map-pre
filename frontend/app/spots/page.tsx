@@ -456,6 +456,7 @@ export default function SpotsPage() {
   const [loading, setLoading] = useState(true)
   const [selectedPref, setSelectedPref] = useState('')
   const [freeword, setFreeword] = useState('')
+  const [helpOpen, setHelpOpen] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -517,10 +518,51 @@ export default function SpotsPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50">
+      {/* 使い方モーダル */}
+      {helpOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-50 px-4"
+          onClick={() => setHelpOpen(false)}
+        >
+          <div
+            className="bg-white rounded-xl p-6 max-w-sm mx-auto mt-32 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-base font-semibold text-zinc-800 mb-3">使い方</h2>
+            <p className="text-sm text-zinc-700 font-medium mb-3">自然発生のオフ会を作ろう</p>
+            <div className="space-y-3 text-sm text-zinc-600">
+              <div>
+                <p className="font-medium text-zinc-800">🔴 今いるナウ</p>
+                <p>今いる場所をチェックイン。同じスポットにいる人が見えます。</p>
+              </div>
+              <div>
+                <p className="font-medium text-zinc-800">📅 行く予定</p>
+                <p>行く日を登録しておくと、同じ日に来る人と出会えます。</p>
+              </div>
+              <p className="text-zinc-400 text-xs">チェックインは3時間で自動終了。ニックネームのみで匿名利用できます。</p>
+            </div>
+            <button
+              onClick={() => setHelpOpen(false)}
+              className="mt-5 w-full text-sm bg-zinc-100 text-zinc-700 rounded-lg py-2 hover:bg-zinc-200 transition-colors"
+            >
+              閉じる
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ヘッダー・フィルター */}
       <header className="bg-white border-b border-zinc-200 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 pt-3 pb-2">
-          <h1 className="text-base font-semibold text-zinc-800 mb-2">スポット</h1>
+          <div className="flex items-center gap-2 mb-2">
+            <h1 className="text-base font-semibold text-zinc-800">オフ会メーカー</h1>
+            <button
+              onClick={() => setHelpOpen(true)}
+              className="w-5 h-5 rounded-full bg-zinc-200 text-zinc-500 text-xs font-bold hover:bg-zinc-300 transition-colors flex items-center justify-center flex-shrink-0"
+            >
+              ?
+            </button>
+          </div>
           <div className="flex gap-2">
             <input
               type="text"
