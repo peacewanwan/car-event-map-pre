@@ -41,14 +41,47 @@ function formatMonthDay(dateStr: string) {
   return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+// ---------- 都道府県中心座標マップ ----------
+
+const PREF_LOCATIONS: Record<string, { lat: number; lng: number; zoom: number }> = {
+  北海道: { lat: 43.06, lng: 141.35, zoom: 7 },
+  宮城県: { lat: 38.26, lng: 140.87, zoom: 9 },
+  山形県: { lat: 38.24, lng: 140.36, zoom: 9 },
+  茨城県: { lat: 36.34, lng: 140.45, zoom: 9 },
+  栃木県: { lat: 36.57, lng: 139.88, zoom: 9 },
+  群馬県: { lat: 36.39, lng: 139.06, zoom: 9 },
+  埼玉県: { lat: 35.86, lng: 139.65, zoom: 10 },
+  千葉県: { lat: 35.60, lng: 140.12, zoom: 10 },
+  東京都: { lat: 35.68, lng: 139.69, zoom: 10 },
+  神奈川県: { lat: 35.45, lng: 139.64, zoom: 10 },
+  新潟県: { lat: 37.90, lng: 139.02, zoom: 9 },
+  石川県: { lat: 36.59, lng: 136.63, zoom: 9 },
+  山梨県: { lat: 35.66, lng: 138.57, zoom: 9 },
+  長野県: { lat: 36.65, lng: 138.18, zoom: 8 },
+  岐阜県: { lat: 35.39, lng: 136.72, zoom: 9 },
+  静岡県: { lat: 34.97, lng: 138.38, zoom: 9 },
+  愛知県: { lat: 35.18, lng: 136.90, zoom: 10 },
+  三重県: { lat: 34.73, lng: 136.51, zoom: 9 },
+  滋賀県: { lat: 35.00, lng: 135.87, zoom: 10 },
+  京都府: { lat: 35.02, lng: 135.75, zoom: 10 },
+  大阪府: { lat: 34.69, lng: 135.50, zoom: 10 },
+  兵庫県: { lat: 34.69, lng: 135.18, zoom: 9 },
+  奈良県: { lat: 34.68, lng: 135.83, zoom: 10 },
+  広島県: { lat: 34.39, lng: 132.45, zoom: 9 },
+  福岡県: { lat: 33.59, lng: 130.42, zoom: 10 },
+  熊本県: { lat: 32.78, lng: 130.74, zoom: 9 },
+}
+
+const JAPAN_DEFAULT = { lat: 36.5, lng: 137.0, zoom: 6 }
+
 // ---------- MapGeolocator ----------
 
-function MapGeolocator({ target }: { target: { lat: number; lng: number } | null }) {
+function MapGeolocator({ target }: { target: { lat: number; lng: number; zoom?: number } | null }) {
   const map = useMap()
   useEffect(() => {
     if (map && target) {
       map.panTo(target)
-      map.setZoom(11)
+      map.setZoom(target.zoom ?? 11)
     }
   }, [map, target])
   return null
@@ -481,6 +514,7 @@ export default function SpotsPage() {
   const [mounted, setMounted] = useState(false)
   const [geoTarget, setGeoTarget] = useState<{ lat: number; lng: number } | null>(null)
   const [geoLoading, setGeoLoading] = useState(false)
+  const [prefTarget, setPrefTarget] = useState<{ lat: number; lng: number; zoom: number } | null>(null)
 
   // 地図ポップアップ用チェックイン state
   const [mapPopupCheckins, setMapPopupCheckins] = useState<Checkin[]>([])
@@ -773,7 +807,11 @@ export default function SpotsPage() {
               <div style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 20 }}>
                 <select
                   value={selectedPref}
-                  onChange={(e) => { setSelectedPref(e.target.value); setActiveMapSpot(null) }}
+                  onChange={(e) => {
+                    setSelectedPref(e.target.value)
+                    setActiveMapSpot(null)
+                    setPrefTarget(PREF_LOCATIONS[e.target.value] ?? JAPAN_DEFAULT)
+                  }}
                   style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', border: 'none', padding: '6px 12px', fontSize: '14px', cursor: 'pointer' }}
                 >
                   <option value="">都道府県：すべて</option>
@@ -803,6 +841,7 @@ export default function SpotsPage() {
                   onClick={() => setActiveMapSpot(null)}
                 >
                   <MapGeolocator target={geoTarget} />
+                  <MapGeolocator target={prefTarget} />
 
                   {spotsWithCounts.map((spot) => (
                     <AdvancedMarker
