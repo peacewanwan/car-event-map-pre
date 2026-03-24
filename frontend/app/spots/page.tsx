@@ -528,30 +528,32 @@ export default function SpotsPage() {
   return (
     <div className="min-h-screen bg-zinc-50">
       {/* ヘッダー・フィルター */}
-      <header className="bg-white border-b border-zinc-200 sticky top-0 z-10 px-4 pt-3 pb-2">
-        <h1 className="text-base font-semibold text-zinc-800 mb-2">スポット</h1>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={freeword}
-            onChange={(e) => setFreeword(e.target.value)}
-            placeholder="スポット名で検索"
-            className="flex-1 text-sm border border-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300"
-          />
-          <select
-            value={selectedPref}
-            onChange={(e) => setSelectedPref(e.target.value)}
-            className="text-sm border border-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
-          >
-            <option value="">都道府県：すべて</option>
-            {prefectures.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
+      <header className="bg-white border-b border-zinc-200 sticky top-0 z-10">
+        <div className="max-w-2xl mx-auto px-4 pt-3 pb-2">
+          <h1 className="text-base font-semibold text-zinc-800 mb-2">スポット</h1>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={freeword}
+              onChange={(e) => setFreeword(e.target.value)}
+              placeholder="スポット名で検索"
+              className="flex-1 text-sm border border-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300"
+            />
+            <select
+              value={selectedPref}
+              onChange={(e) => setSelectedPref(e.target.value)}
+              className="text-sm border border-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white"
+            >
+              <option value="">都道府県：すべて</option>
+              {prefectures.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+          <p className="text-xs text-zinc-400 mt-1.5">
+            {loading ? '読込中...' : `${filtered.length}件`}
+          </p>
         </div>
-        <p className="text-xs text-zinc-400 mt-1.5">
-          {loading ? '読込中...' : `${filtered.length}件`}
-        </p>
       </header>
 
       {/* スポットリスト */}
