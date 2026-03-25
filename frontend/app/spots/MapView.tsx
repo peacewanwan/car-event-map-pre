@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps'
 import { createClient } from '@/lib/supabase/client'
 import { LocateFixed, Calendar } from 'lucide-react'
@@ -142,20 +142,22 @@ function PopupCheckinSection({ spot }: { spot: Spot }) {
         </button>
       ) : (
         <div className="space-y-2">
-          <input
-            type="text"
-            placeholder="ニックネーム"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-            className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-          />
-          <input
-            type="text"
-            placeholder="車種（任意）"
-            value={vehicleType}
-            onChange={(e) => setVehicleType(e.target.value)}
-            className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-          />
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="text"
+              placeholder="ニックネーム"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            />
+            <input
+              type="text"
+              placeholder="車種（任意）"
+              value={vehicleType}
+              onChange={(e) => setVehicleType(e.target.value)}
+              className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            />
+          </div>
           <button
             onClick={handleCheckin}
             disabled={!nickname.trim() || submitting}
@@ -238,20 +240,22 @@ function PopupPlanSection({ spot }: { spot: Spot }) {
         </button>
       ) : (
         <div className="space-y-2">
-          <input
-            type="text"
-            placeholder="ニックネーム"
-            value={planNickname}
-            onChange={(e) => setPlanNickname(e.target.value)}
-            className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-          />
-          <input
-            type="text"
-            placeholder="車種（任意）"
-            value={planVehicle}
-            onChange={(e) => setPlanVehicle(e.target.value)}
-            className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-          />
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="text"
+              placeholder="ニックネーム"
+              value={planNickname}
+              onChange={(e) => setPlanNickname(e.target.value)}
+              className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            />
+            <input
+              type="text"
+              placeholder="車種（任意）"
+              value={planVehicle}
+              onChange={(e) => setPlanVehicle(e.target.value)}
+              className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            />
+          </div>
           <div className="relative w-44">
             <Calendar
               size={15}
@@ -296,11 +300,20 @@ function PopupPlanSection({ spot }: { spot: Spot }) {
 
 // ---------- useMap() を使うためだけの子コンポーネント ----------
 
-function MapInner({ onMapReady }: { onMapReady: (map: google.maps.Map) => void }) {
+function MapInner({ onMapReady, onZoomChange }: {
+  onMapReady: (map: google.maps.Map) => void
+  onZoomChange?: (zoom: number) => void
+}) {
   const map = useMap()
   useEffect(() => {
-    if (map) onMapReady(map)
-  }, [map, onMapReady])
+    if (!map) return
+    onMapReady(map)
+    if (!onZoomChange) return
+    const listener = map.addListener('zoom_changed', () => {
+      onZoomChange(map.getZoom() ?? 6)
+    })
+    return () => google.maps.event.removeListener(listener)
+  }, [map, onMapReady, onZoomChange])
   return null
 }
 
@@ -315,6 +328,11 @@ export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
   const [activeTab, setActiveTab] = useState<PopupTab>('now')
   const [prefFilter, setPrefFilter] = useState('')
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null)
+  const [zoomLevel, setZoomLevel] = useState(JAPAN_DEFAULT.zoom)
+
+  const handleZoomChange = useCallback((zoom: number) => {
+    setZoomLevel(zoom)
+  }, [])
 
   const prefOptions = Array.from(
     new Set(spots.map((s) => s.prefecture).filter(Boolean) as string[])
@@ -352,7 +370,7 @@ export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
         defaultZoom={JAPAN_DEFAULT.zoom}
         style={{ width: '100%', height: '100%' }}
       >
-        <MapInner onMapReady={setMapInstance} />
+        <MapInner onMapReady={setMapInstance} onZoomChange={handleZoomChange} />
 
         {/* マーカー */}
         {spots.map((spot) => (
@@ -361,11 +379,27 @@ export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
             position={{ lat: spot.lat, lng: spot.lng }}
             onClick={() => handleMarkerClick(spot)}
           >
-            {(nowCountMap[spot.id] ?? 0) >= 1 ? (
-              <RedPin count={nowCountMap[spot.id]} />
-            ) : (
-              <BluePin />
-            )}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {(nowCountMap[spot.id] ?? 0) >= 1 ? (
+                <RedPin count={nowCountMap[spot.id]} />
+              ) : (
+                <BluePin />
+              )}
+              {zoomLevel >= 13 && (
+                <div style={{
+                  background: 'rgba(15,23,42,0.85)',
+                  color: 'white',
+                  fontSize: '10px',
+                  padding: '1px 5px',
+                  borderRadius: '3px',
+                  border: '1px solid rgba(148,163,184,0.3)',
+                  whiteSpace: 'nowrap',
+                  marginTop: '2px',
+                }}>
+                  {spot.name}
+                </div>
+              )}
+            </div>
           </AdvancedMarker>
         ))}
       </Map>
@@ -439,25 +473,21 @@ export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
           </div>
 
           {/* タブコンテンツ */}
-          <div className="p-4">
+          <div className="p-4 space-y-3">
             {activeTab === 'now' ? (
               <PopupCheckinSection spot={activeSpot} />
             ) : (
               <PopupPlanSection spot={activeSpot} />
             )}
-          </div>
-
-          {/* リストリンク */}
-          {onSpotSelect && (
-            <div className="px-4 pb-4">
+            {onSpotSelect && (
               <button
                 onClick={() => { onSpotSelect(activeSpot.id); setActiveSpot(null) }}
                 className="w-full py-2.5 rounded-xl border border-slate-700 text-slate-400 text-sm hover:border-slate-600 transition-colors"
               >
                 リストで詳細を見る
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>

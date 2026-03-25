@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Calendar } from 'lucide-react'
+import { Calendar, Navigation2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 // ---------- Types ----------
@@ -51,6 +51,20 @@ const TIME_SLOT_LABEL: Record<string, string> = {
   afternoon: '☀️ 午後',
   evening: '🌆 夕方〜夜',
   flexible: '🌀 気分次第',
+}
+
+const TIME_SLOT_EMOJI: Record<string, string> = {
+  morning: '🌅',
+  afternoon: '☀️',
+  evening: '🌆',
+  flexible: '🌀',
+}
+
+const TIME_SLOT_TEXT: Record<string, string> = {
+  morning: '午前',
+  afternoon: '午後',
+  evening: '夕方〜夜',
+  flexible: '気分次第',
 }
 
 // ---------- Helpers ----------
@@ -295,20 +309,32 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
       )}
 
       {/* カードヘッダー */}
-      <button
-        className="w-full text-left px-4 py-3"
+      <div
+        className="w-full text-left px-4 py-3 cursor-pointer"
         onClick={onToggle}
       >
-        {/* 1行目：スポット名 + 都道府県 */}
+        {/* 1行目：スポット名 + 都道府県 + ナビ */}
         <div className="flex items-start justify-between gap-2 mb-1">
           <p className="font-semibold text-white text-sm leading-snug">
             {spot.name}
           </p>
-          {spot.prefecture && (
-            <span className="text-xs text-slate-400 flex-shrink-0 mt-0.5">
-              {spot.prefecture}
-            </span>
-          )}
+          <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+            {spot.prefecture && (
+              <span className="text-xs text-slate-400">
+                {spot.prefecture}
+              </span>
+            )}
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.name)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-slate-400 hover:text-emerald-400 transition-colors"
+              title="Googleマップで開く"
+            >
+              <Navigation2 size={14} />
+            </a>
+          </div>
         </div>
 
         {/* 2行目：カテゴリバッジ */}
@@ -330,7 +356,7 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
           </span>
           <span className="text-xs text-slate-500">📅 今月{planCount}人</span>
         </div>
-      </button>
+      </div>
 
       {/* ===== アコーディオン展開エリア ===== */}
       {isOpen && (
@@ -378,20 +404,22 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
                 </button>
               ) : (
                 <>
-                  <input
-                    type="text"
-                    value={nickname}
-                    onChange={(e) => setNickname(e.target.value)}
-                    placeholder="ニックネーム"
-                    className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
-                  />
-                  <input
-                    type="text"
-                    value={vehicleType}
-                    onChange={(e) => setVehicleType(e.target.value)}
-                    placeholder="車種（任意）"
-                    className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
-                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value)}
+                      placeholder="ニックネーム"
+                      className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                    />
+                    <input
+                      type="text"
+                      value={vehicleType}
+                      onChange={(e) => setVehicleType(e.target.value)}
+                      placeholder="車種（任意）"
+                      className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                    />
+                  </div>
                   <button
                     onClick={handleCheckin}
                     disabled={!nickname.trim() || submitting}
@@ -503,20 +531,22 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
                 </button>
               ) : (
                 <>
-                  <input
-                    type="text"
-                    value={planNickname}
-                    onChange={(e) => setPlanNickname(e.target.value)}
-                    placeholder="ニックネーム"
-                    className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
-                  />
-                  <input
-                    type="text"
-                    value={planVehicle}
-                    onChange={(e) => setPlanVehicle(e.target.value)}
-                    placeholder="車種（任意）"
-                    className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
-                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={planNickname}
+                      onChange={(e) => setPlanNickname(e.target.value)}
+                      placeholder="ニックネーム"
+                      className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                    />
+                    <input
+                      type="text"
+                      value={planVehicle}
+                      onChange={(e) => setPlanVehicle(e.target.value)}
+                      placeholder="車種（任意）"
+                      className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                    />
+                  </div>
                   <div className="relative w-44">
                     <Calendar
                       size={15}
@@ -530,19 +560,25 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
                       className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg pl-8 pr-3 py-2 focus:border-emerald-500 focus:outline-none [color-scheme:dark]"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-4 gap-1">
                     {(['morning', 'afternoon', 'evening', 'flexible'] as const).map((slot) => (
                       <button
                         key={slot}
                         type="button"
                         onClick={() => setSelectedTimeSlot(selectedTimeSlot === slot ? null : slot)}
-                        className={
+                        className={[
+                          'flex flex-col items-center py-2 rounded-lg border text-base transition-colors',
                           selectedTimeSlot === slot
-                            ? 'border border-emerald-500 text-emerald-400 bg-emerald-950/30 rounded-lg px-3 py-2 text-sm'
-                            : 'border border-slate-700 text-slate-400 rounded-lg px-3 py-2 text-sm hover:border-slate-600'
-                        }
+                            ? 'border-emerald-500 bg-emerald-950/30 text-emerald-400'
+                            : 'border-slate-700 text-slate-400 hover:border-slate-600',
+                        ].join(' ')}
                       >
-                        {TIME_SLOT_LABEL[slot]}
+                        {TIME_SLOT_EMOJI[slot]}
+                        {selectedTimeSlot === slot && (
+                          <span className="text-[9px] mt-0.5 text-emerald-400 leading-none">
+                            {TIME_SLOT_TEXT[slot]}
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
