@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { HelpCircle } from "lucide-react";
 
 // ---------- Types ----------
 
@@ -312,9 +313,9 @@ export default function Home() {
       setRecurringLoading(false);
 
       if (logData && logData.length > 0) {
-        const d = new Date(logData[0].executed_at);
+        const jst = new Date(new Date(logData[0].executed_at).getTime() + 9 * 60 * 60 * 1000);
         setLastUpdated(
-          `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+          `${jst.getUTCFullYear()}/${String(jst.getUTCMonth() + 1).padStart(2, "0")}/${String(jst.getUTCDate()).padStart(2, "0")} ${String(jst.getUTCHours()).padStart(2, "0")}:${String(jst.getUTCMinutes()).padStart(2, "0")} JST`
         );
       }
     }
@@ -430,15 +431,15 @@ export default function Home() {
             >
               オフ会メーカー
             </Link>
-            <a href="/faq" className="text-sm text-slate-400 hover:text-slate-200 transition-colors flex-shrink-0">
-              FAQ
-            </a>
             <button
               onClick={() => { setModalOpen(true); setSubmitResult(""); setSubmitError(""); }}
               className="text-sm font-medium px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500 hover:bg-emerald-500/10 transition-colors flex-shrink-0"
             >
-              投稿
+              イベント投稿
             </button>
+            <a href="/faq" className="text-slate-400 hover:text-slate-200 transition-colors flex-shrink-0" title="よくある質問">
+              <HelpCircle size={18} />
+            </a>
           </div>
         </div>
       </header>

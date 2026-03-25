@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { APIProvider } from '@vis.gl/react-google-maps'
 import Link from 'next/link'
+import { HelpCircle } from 'lucide-react'
 import SpotCard from './SpotCard'
 import MapView from './MapView'
 
@@ -40,6 +41,7 @@ export default function SpotsPage() {
   const [prefFilter, setPrefFilter] = useState('')
   const [nameFilter, setNameFilter] = useState('')
   const [nowOnly, setNowOnly] = useState(false)
+  const [planOnly, setPlanOnly] = useState(false)
 
   // ---- unified search state ----
   const [highlightedSpotIds, setHighlightedSpotIds] = useState<Set<number>>(new Set())
@@ -159,6 +161,7 @@ export default function SpotsPage() {
   const filteredSpots = spots.filter((s) => {
     if (prefFilter && s.prefecture !== prefFilter) return false
     if (nowOnly && (nowCountMap[s.id] || 0) === 0) return false
+    if (planOnly && (planCountMap[s.id] || 0) === 0) return false
     if (nameFilter) {
       const q = nameFilter.toLowerCase()
       const matchesName = s.name?.toLowerCase().includes(q)
@@ -238,25 +241,23 @@ export default function SpotsPage() {
       {/* ===== ヘッダー（sticky） ===== */}
       <header className="sticky top-0 z-30 bg-slate-950/90 backdrop-blur border-b border-slate-800">
         <div className="max-w-2xl mx-auto px-4 py-3 grid grid-cols-3 items-center">
-          <Link
-            href="/"
-            className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
-          >
-            ← offmap
+          <Link href="/" className="flex items-baseline gap-0.5 hover:opacity-80 transition-opacity">
+            <span className="text-xs font-bold text-white">2輪4輪</span>
+            <span className="text-xs font-bold text-sky-400">offmap</span>
           </Link>
           <p className="text-center text-sm font-bold text-emerald-400">
             オフ会メーカー
           </p>
           <div className="flex justify-end items-center gap-3">
-            <a href="/faq" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">
-              FAQ
-            </a>
             <button
               onClick={() => setHowToOpen(true)}
               className="text-xs px-3 py-1.5 rounded-lg border border-emerald-600/40 text-emerald-400 hover:bg-emerald-600/20 transition-colors"
             >
               使い方
             </button>
+            <a href="/faq" className="text-slate-400 hover:text-slate-200 transition-colors" title="よくある質問">
+              <HelpCircle size={18} />
+            </a>
           </div>
         </div>
       </header>
@@ -317,7 +318,7 @@ export default function SpotsPage() {
                 className="flex-1 text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
               />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setNowOnly((v) => !v)}
                 className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
@@ -327,6 +328,16 @@ export default function SpotsPage() {
                 }`}
               >
                 🔴 今いる人あり
+              </button>
+              <button
+                onClick={() => setPlanOnly((v) => !v)}
+                className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
+                  planOnly
+                    ? 'bg-emerald-600/20 text-emerald-400 border-emerald-600/40'
+                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
+                }`}
+              >
+                📅 行く予定の人あり
               </button>
               <p className="text-xs text-slate-600">
                 {loading ? '読込中...' : `${filteredSpots.length}件`}
