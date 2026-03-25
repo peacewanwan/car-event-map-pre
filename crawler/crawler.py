@@ -19,8 +19,10 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 import json
+import re
 import time
 import requests
+from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 from anthropic import Anthropic
 from supabase import create_client
@@ -264,37 +266,180 @@ def fetch_dupcar(url):
         print(f"  [ERROR] dupcarスクレイピング失敗: {url} - {e}")
         return "", []
 
-def fetch_minkara(url):
-    """みんカラ イベントカレンダー専用"""
+def _parse_minkara_date(raw_date):
+    """みんカラの日付文字列をYYYY-MM-DD形式に変換"""
+    if not raw_date:
+        return None
+    m = re.search(r"(\d{4})[年/\-](\d{1,2})[月/\-](\d{1,2})", raw_date)
+    if m:
+        return f"{m.group(1)}-{m.group(2).zfill(2)}-{m.group(3).zfill(2)}"
+    return None
+
+
+def _minkara_to_category(raw_category):
+    """みんカラのカテゴリをDBのcategory値に変換"""
+    if not raw_category:
+        return "meeting"
+    c = raw_category
+    if any(k in c for k in ["走行会", "サーキット", "ジムカーナ"]):
+        return "track"
+    if any(k in c for k in ["ツーリング", "ドライブ"]):
+        return "touring"
+    if any(k in c for k in ["展示", "ショー", "オートサロン"]):
+        return "show"
+    if any(k in c for k in ["定例", "定期", "おはよう"]):
+        return "regular"
+    return "meeting"
+
+
+def crawl_minkara(site_name, site_url):
+    """みんカラ専用クローラー: list.aspxページネーション + 詳細ページ直接パース"""
+    base = "https://minkara.carview.co.jp"
+    today = datetime.now()
+    one_year_later = today + timedelta(days=365)
+    today_str = today.strftime("%Y%m%d")
+    end_str = one_year_later.strftime("%Y%m%d")
+
+    # 既取得IDをDBから収集
     try:
-        res = requests.get(url, headers=HEADERS, timeout=15)
-        res.raise_for_status()
-        soup = BeautifulSoup(res.content, "html.parser")
-
-        events = []
-        calendar_list = soup.find("ul", class_="calendar-list")
-        if calendar_list:
-            for li in calendar_list.find_all("li"):
-                title_dt = li.find("dt", class_="eventTtl")
-                link_tag = title_dt.find("a") if title_dt else None
-                if link_tag:
-                    href = link_tag.get("href") or ""
-                    # 相対URLを絶対URLに変換
-                    if href.startswith("/"):
-                        href = "https://minkara.carview.co.jp" + href
-                    events.append({
-                        "name": link_tag.get_text(strip=True),
-                        "source_url": href or None,
-                    })
-
-        for tag in soup(["script", "style", "nav", "footer", "header"]):
-            tag.decompose()
-        text = soup.get_text(separator="\n", strip=True)
-        return (text or "")[:4000], events
-
+        existing = supabase.table("events").select("source_url").like(
+            "source_url", "https://minkara.carview.co.jp/calendar/%"
+        ).execute()
+        existing_ids = set()
+        for row in (existing.data or []):
+            m = re.search(r"/calendar/(\d+)/", row.get("source_url") or "")
+            if m:
+                existing_ids.add(m.group(1))
     except Exception as e:
-        print(f"  [ERROR] みんカラスクレイピング失敗: {url} - {e}")
-        return "", []
+        print(f"  [WARN] 既存ID取得失敗: {e}")
+        existing_ids = set()
+
+    print(f"  → 既存ID数: {len(existing_ids)}")
+
+    # ページネーションでイベントID収集
+    all_ids = []
+    for pn in range(1, 50):
+        list_url = f"{base}/calendar/list.aspx?fd={today_str}&ed={end_str}&pn={pn}"
+        try:
+            res = requests.get(list_url, headers=HEADERS, timeout=15)
+            res.raise_for_status()
+            soup = BeautifulSoup(res.content, "html.parser")
+            found = []
+            for a in soup.find_all("a", href=True):
+                m = re.match(r"^/calendar/(\d+)/?$", a["href"])
+                if m:
+                    found.append(m.group(1))
+            found = list(dict.fromkeys(found))
+            if not found:
+                print(f"  → pn={pn}: リンクなし、ページネーション終了")
+                break
+            print(f"  → pn={pn}: {len(found)}件のIDを取得")
+            all_ids.extend(found)
+            time.sleep(1)
+        except Exception as e:
+            print(f"  [ERROR] みんカラ一覧フェッチ失敗 pn={pn}: {e}")
+            break
+
+    all_ids = list(dict.fromkeys(all_ids))
+    new_ids = [i for i in all_ids if i not in existing_ids]
+    print(f"  → 合計{len(all_ids)}件、うち新規{len(new_ids)}件をフェッチ")
+
+    events = []
+    for event_id in new_ids:
+        detail_url = f"{base}/calendar/{event_id}/"
+        try:
+            res = requests.get(detail_url, headers=HEADERS, timeout=15)
+            res.raise_for_status()
+            soup = BeautifulSoup(res.content, "html.parser")
+
+            event = {
+                "source_url": detail_url,
+                "source_site": site_name,
+                "source_site_url": site_url,
+            }
+
+            # detailTable をパース（複数セレクタを試行）
+            table = (
+                soup.find("table", class_="detailTable")
+                or soup.find("table", id="detailTable")
+                or soup.find("table", attrs={"class": re.compile(r"detail", re.I)})
+            )
+            if table:
+                for row in table.find_all("tr"):
+                    th = row.find("th")
+                    td = row.find("td")
+                    if not th or not td:
+                        continue
+                    label = th.get_text(strip=True)
+                    value = td.get_text(strip=True)
+
+                    if any(k in label for k in ["タイトル", "イベント名", "名称"]):
+                        event["name"] = value
+                    elif any(k in label for k in ["開催日", "日時", "日程"]):
+                        event["raw_date"] = value
+                    elif any(k in label for k in ["開催地", "場所", "会場", "住所"]):
+                        event["raw_location"] = value
+                    elif "カテゴリ" in label:
+                        event["raw_category"] = value
+                    elif any(k in label for k in ["車種", "対象車種", "参加車種"]):
+                        v = value[:10] if value else None
+                        event["target_vehicle"] = v
+                    elif "ジャンル" in label:
+                        event["genre"] = value
+
+            # イベント名フォールバック
+            if not event.get("name"):
+                for selector in ["h1", "h2", ".eventTitle", ".event-title"]:
+                    el = soup.select_one(selector)
+                    if el:
+                        event["name"] = el.get_text(strip=True)
+                        break
+
+            # 日付パース
+            event["event_date"] = _parse_minkara_date(event.pop("raw_date", None))
+
+            # 場所パース
+            raw_location = event.pop("raw_location", None)
+            if raw_location:
+                event["prefecture"] = guess_prefecture(raw_location)
+                event["venue"] = raw_location
+
+            # カテゴリ変換
+            event["category"] = _minkara_to_category(event.pop("raw_category", None))
+
+            # target_vehicle / prefecture 補完
+            if not event.get("target_vehicle"):
+                event["target_vehicle"] = guess_vehicle(event.get("name") or "")
+            if not event.get("prefecture"):
+                event["prefecture"] = guess_prefecture(
+                    (event.get("name") or "") + " " + (event.get("venue") or "")
+                )
+
+            # lat/lng: JS内の center: [lng, lat] を抽出（任意）
+            for script in soup.find_all("script"):
+                if script.string:
+                    m = re.search(
+                        r"center\s*:\s*\[\s*([+-]?\d+\.?\d*)\s*,\s*([+-]?\d+\.?\d*)\s*\]",
+                        script.string,
+                    )
+                    if m:
+                        event["lng"] = float(m.group(1))
+                        event["lat"] = float(m.group(2))
+                        break
+
+            if event.get("name") and event.get("event_date"):
+                events.append(event)
+                print(f"  ✓ {event['name']} ({event['event_date']})")
+            else:
+                print(f"  [SKIP] ID={event_id}: 名前または日付なし")
+
+            time.sleep(1)
+
+        except Exception as e:
+            print(f"  [ERROR] 詳細フェッチ失敗 ID={event_id}: {e}")
+            time.sleep(1)
+
+    return events
 
 def fetch_suzuka(url):
     """鈴鹿サーキット専用 - Calendar_Contents div を直接抽出"""
@@ -317,8 +462,6 @@ def fetch_suzuka(url):
 def fetch_site(url, crawl_type):
     if crawl_type == "dupcar":
         return fetch_dupcar(url)
-    elif crawl_type == "minkara":
-        return fetch_minkara(url)
     elif crawl_type == "suzuka":
         return fetch_suzuka(url)
     else:
@@ -450,17 +593,23 @@ def main():
         error_message = None
         saved = updated = skipped = 0
         try:
-            text, prefetched = fetch_site(site_url, crawl_type)
-            if not text:
-                print(f"  → テキスト取得失敗、スキップ\n")
-                error_message = "テキスト取得失敗"
-            else:
-                if prefetched:
-                    print(f"  → {len(prefetched)}件のリンクを事前取得")
-                events = normalize(text, site_name, site_url, prefetched)
-                print(f"  → {len(events)}件のイベントを抽出")
+            if crawl_type == "minkara":
+                events = crawl_minkara(site_name, site_url)
+                print(f"  → {len(events)}件のイベントを取得")
                 saved, updated, skipped = save_events(events)
                 print(f"  → 新規: {saved}件 / 更新: {updated}件 / スキップ: {skipped}件\n")
+            else:
+                text, prefetched = fetch_site(site_url, crawl_type)
+                if not text:
+                    print(f"  → テキスト取得失敗、スキップ\n")
+                    error_message = "テキスト取得失敗"
+                else:
+                    if prefetched:
+                        print(f"  → {len(prefetched)}件のリンクを事前取得")
+                    events = normalize(text, site_name, site_url, prefetched)
+                    print(f"  → {len(events)}件のイベントを抽出")
+                    saved, updated, skipped = save_events(events)
+                    print(f"  → 新規: {saved}件 / 更新: {updated}件 / スキップ: {skipped}件\n")
         except Exception as e:
             error_message = str(e)
             print(f"  [ERROR] {site_name}: {e}\n")
