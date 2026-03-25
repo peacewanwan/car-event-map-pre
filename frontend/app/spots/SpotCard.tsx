@@ -16,6 +16,8 @@ export type SpotCardProps = {
   planCount: number
   isOpen: boolean
   onToggle: () => void
+  isHighlighted?: boolean
+  highlightHint?: string
 }
 
 type CheckinUser = {
@@ -31,6 +33,7 @@ type PlanCheckin = {
   nickname: string
   vehicle_type: string | null
   planned_at: string
+  time_slot: string | null
 }
 
 // ---------- Constants ----------
@@ -40,6 +43,13 @@ const CATEGORY_COLORS: Record<string, { text: string; bg: string }> = {
   'SA・PA':   { text: 'text-amber-400',  bg: 'bg-amber-500/10' },
   '展望台・峠': { text: 'text-orange-400', bg: 'bg-orange-500/10' },
   '駐車場':    { text: 'text-slate-400',  bg: 'bg-slate-500/10' },
+}
+
+const TIME_SLOT_LABEL: Record<string, string> = {
+  morning: '🌅 午前',
+  afternoon: '☀️ 午後',
+  evening: '🌆 夕方〜夜',
+  flexible: '🌀 気分次第',
 }
 
 // ---------- Helpers ----------
@@ -86,7 +96,7 @@ function generateCalendarMonths() {
 
 // ---------- SpotCard ----------
 
-export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }: SpotCardProps) {
+export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, isHighlighted, highlightHint }: SpotCardProps) {
   const hasNow = nowCount >= 1
   const catColor = spot.category ? CATEGORY_COLORS[spot.category] : null
 
@@ -127,14 +137,15 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
     if (!stored) return false
     try {
       const { plannedAt } = JSON.parse(stored)
-      return new Date(plannedAt) > new Date()
+      return new Date(plannedAt + 'T23:59:59+09:00') > new Date()
     } catch {
       return false
     }
   })
   const [planNickname, setPlanNickname] = useState('')
   const [planVehicle, setPlanVehicle] = useState('')
-  const [planDatetime, setPlanDatetime] = useState('')
+  const [planDate, setPlanDate] = useState('')
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)
 
   // ---- fetch checkins ----
   useEffect(() => {
@@ -167,7 +178,7 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
       oneMonthLater.setMonth(oneMonthLater.getMonth() + 1)
       const { data } = await supabase
         .from('spot_checkins')
-        .select('id, nickname, vehicle_type, planned_at')
+        .select('id, nickname, vehicle_type, planned_at, time_slot')
         .eq('spot_id', spot.id)
         .eq('checkin_type', 'plan')
         .gte('planned_at', now.toISOString())
@@ -222,7 +233,7 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
 
   // ---- plan ----
   async function handlePlan() {
-    if (!planNickname.trim() || !planDatetime || submitting) return
+    if (!planNickname.trim() || !planDate || !selectedTimeSlot || submitting) return
     setSubmitting(true)
     const supabase = createClient()
     const { data, error } = await supabase
@@ -232,16 +243,19 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
         nickname: planNickname.trim(),
         checkin_type: 'plan',
         vehicle_type: planVehicle.trim() || null,
-        planned_at: new Date(planDatetime).toISOString(),
+        planned_at: `${planDate}T00:00:00+09:00`,
+        time_slot: selectedTimeSlot,
+        comment: null,
       })
       .select()
       .single()
     if (!error && data) {
-      localStorage.setItem(planStorageKey, JSON.stringify({ id: data.id, plannedAt: planDatetime }))
+      localStorage.setItem(planStorageKey, JSON.stringify({ id: data.id, plannedAt: planDate }))
       setAlreadyPlanned(true)
       setPlanNickname('')
       setPlanVehicle('')
-      setPlanDatetime('')
+      setPlanDate('')
+      setSelectedTimeSlot(null)
       setPlanRefreshKey((k) => k + 1)
     }
     setSubmitting(false)
@@ -265,12 +279,20 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
     <div
       className={[
         'rounded-2xl overflow-hidden transition-colors cursor-pointer',
-        'bg-slate-900/80',
-        hasNow
-          ? 'border border-l-2 border-emerald-500/40 border-l-emerald-500'
-          : 'border border-slate-800 hover:border-slate-600',
+        isHighlighted
+          ? 'ring-1 ring-emerald-400/60 bg-emerald-950/20 border border-emerald-500/40'
+          : hasNow
+            ? 'bg-slate-900/80 border border-l-2 border-emerald-500/40 border-l-emerald-500'
+            : 'bg-slate-900/80 border border-slate-800 hover:border-slate-600',
       ].join(' ')}
     >
+      {/* ハイライトヒント */}
+      {isHighlighted && highlightHint && (
+        <div className="px-4 pt-2.5 pb-0">
+          <p className="text-xs text-emerald-400/80">🔍 {highlightHint}</p>
+        </div>
+      )}
+
       {/* カードヘッダー */}
       <button
         className="w-full text-left px-4 py-3"
@@ -458,7 +480,7 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
                         <p className="text-sm text-slate-200">{c.nickname}</p>
                         <p className="text-xs text-slate-500">
                           {c.vehicle_type && `${c.vehicle_type} · `}
-                          {new Date(c.planned_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+                          {c.time_slot ? TIME_SLOT_LABEL[c.time_slot] : ''}
                         </p>
                       </div>
                     </div>
@@ -495,14 +517,31 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
                     className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
                   />
                   <input
-                    type="datetime-local"
-                    value={planDatetime}
-                    onChange={(e) => setPlanDatetime(e.target.value)}
+                    type="date"
+                    value={planDate}
+                    onChange={(e) => setPlanDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
                     className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors [color-scheme:dark]"
                   />
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['morning', 'afternoon', 'evening', 'flexible'] as const).map((slot) => (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => setSelectedTimeSlot(selectedTimeSlot === slot ? null : slot)}
+                        className={
+                          selectedTimeSlot === slot
+                            ? 'border border-emerald-500 text-emerald-400 bg-emerald-950/30 rounded-lg px-3 py-2 text-sm'
+                            : 'border border-slate-700 text-slate-400 rounded-lg px-3 py-2 text-sm hover:border-slate-600'
+                        }
+                      >
+                        {TIME_SLOT_LABEL[slot]}
+                      </button>
+                    ))}
+                  </div>
                   <button
                     onClick={handlePlan}
-                    disabled={!planNickname.trim() || !planDatetime || submitting}
+                    disabled={!planNickname.trim() || !planDate || !selectedTimeSlot || submitting}
                     className="w-full py-3 rounded-xl bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     {submitting ? '登録中...' : 'ここに行く 登録する'}

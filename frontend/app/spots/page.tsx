@@ -41,6 +41,11 @@ export default function SpotsPage() {
   const [nameFilter, setNameFilter] = useState('')
   const [nowOnly, setNowOnly] = useState(false)
 
+  // ---- unified search state ----
+  const [highlightedSpotIds, setHighlightedSpotIds] = useState<Set<number>>(new Set())
+  const [highlightHintMap, setHighlightHintMap] = useState<Record<number, string>>({})
+  const [checkinMatchedSpotIds, setCheckinMatchedSpotIds] = useState<Set<number>>(new Set())
+
   // ---- data fetch（初回 + 30秒ごと自動更新） ----
   useEffect(() => {
     async function fetchData() {
@@ -87,6 +92,65 @@ export default function SpotsPage() {
     return () => clearInterval(interval)
   }, [])
 
+  // ---- unified search: checkin lookup ----
+  useEffect(() => {
+    if (!nameFilter.trim()) {
+      setHighlightedSpotIds(new Set())
+      setHighlightHintMap({})
+      setCheckinMatchedSpotIds(new Set())
+      return
+    }
+
+    async function searchCheckins() {
+      const supabase = createClient()
+      const q = nameFilter.toLowerCase()
+      const now = new Date().toISOString()
+      const today = new Date().toISOString().split('T')[0]
+      const in14Days = new Date()
+      in14Days.setDate(in14Days.getDate() + 14)
+      const in14DaysStr = in14Days.toISOString()
+
+      const { data: matchingCheckins } = await supabase
+        .from('spot_checkins')
+        .select('spot_id, nickname, vehicle_type, checkin_type, expires_at, left_at, planned_at')
+        .or(`nickname.ilike.%${nameFilter}%,vehicle_type.ilike.%${nameFilter}%`)
+
+      const newHighlightIds = new Set<number>()
+      const newHintMap: Record<number, string> = {}
+      const newCheckinMatchedIds = new Set<number>()
+
+      if (matchingCheckins) {
+        for (const c of matchingCheckins) {
+          let valid = false
+          if (c.checkin_type === 'now' && !c.left_at && c.expires_at > now) {
+            valid = true
+          } else if (c.checkin_type === 'plan' && c.planned_at) {
+            const planDate = c.planned_at.split('T')[0]
+            if (planDate >= today && c.planned_at <= in14DaysStr) {
+              valid = true
+            }
+          }
+
+          if (valid) {
+            newCheckinMatchedIds.add(c.spot_id)
+            const hint =
+              c.nickname?.toLowerCase().includes(q)
+                ? `${c.nickname}さんが登録中`
+                : `${c.vehicle_type}で登録中`
+            if (!newHintMap[c.spot_id]) {
+              newHintMap[c.spot_id] = hint
+            }
+          }
+        }
+      }
+
+      setCheckinMatchedSpotIds(newCheckinMatchedIds)
+      setHighlightHintMap(newHintMap)
+    }
+
+    searchCheckins()
+  }, [nameFilter])
+
   // ---- derived ----
   const prefectures = Array.from(
     new Set(spots.map((s) => s.prefecture).filter(Boolean) as string[])
@@ -94,13 +158,32 @@ export default function SpotsPage() {
 
   const filteredSpots = spots.filter((s) => {
     if (prefFilter && s.prefecture !== prefFilter) return false
+    if (nowOnly && (nowCountMap[s.id] || 0) === 0) return false
     if (nameFilter) {
       const q = nameFilter.toLowerCase()
-      if (!s.name?.toLowerCase().includes(q)) return false
+      const matchesName = s.name?.toLowerCase().includes(q)
+      const matchesCheckin = checkinMatchedSpotIds.has(s.id)
+      if (!matchesName && !matchesCheckin) return false
     }
-    if (nowOnly && (nowCountMap[s.id] || 0) === 0) return false
     return true
   })
+
+  // spots highlighted only via checkin match (not name match)
+  useEffect(() => {
+    if (!nameFilter.trim()) {
+      setHighlightedSpotIds(new Set())
+      return
+    }
+    const q = nameFilter.toLowerCase()
+    const ids = new Set<number>()
+    for (const spotId of checkinMatchedSpotIds) {
+      const spot = spots.find((s) => s.id === spotId)
+      if (spot && !spot.name?.toLowerCase().includes(q)) {
+        ids.add(spotId)
+      }
+    }
+    setHighlightedSpotIds(ids)
+  }, [checkinMatchedSpotIds, nameFilter, spots])
 
   // ---------- JSX ----------
 
@@ -227,7 +310,7 @@ export default function SpotsPage() {
                 type="text"
                 value={nameFilter}
                 onChange={(e) => setNameFilter(e.target.value)}
-                placeholder="スポット名で検索"
+                placeholder="スポット名 / ハンドル名 / 車種"
                 className="flex-1 text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
               />
             </div>
@@ -248,7 +331,7 @@ export default function SpotsPage() {
             </div>
           </div>
 
-          {/* スポット一覧（プレースホルダー） */}
+          {/* スポット一覧 */}
           <div className="px-4 py-4 space-y-3">
             {loading ? (
               <div className="flex justify-center py-16">
@@ -267,6 +350,8 @@ export default function SpotsPage() {
                   planCount={planCountMap[spot.id] || 0}
                   isOpen={openSpotId === spot.id}
                   onToggle={() => setOpenSpotId(openSpotId === spot.id ? null : spot.id)}
+                  isHighlighted={highlightedSpotIds.has(spot.id)}
+                  highlightHint={highlightHintMap[spot.id]}
                 />
               ))
             )}
