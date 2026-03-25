@@ -432,7 +432,7 @@ export default function Home() {
             </Link>
             <button
               onClick={() => { setModalOpen(true); setSubmitResult(""); setSubmitError(""); }}
-              className="text-sm font-medium px-3 py-1.5 rounded-lg bg-sky-600/20 text-sky-400 border border-sky-600/30 hover:bg-sky-600/30 transition-colors flex-shrink-0"
+              className="text-sm font-medium px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500 hover:bg-emerald-500/10 transition-colors flex-shrink-0"
             >
               投稿
             </button>

@@ -393,7 +393,7 @@ export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
 
       {/* 画面下部固定ポップアップ（中央寄せ・max-w-sm） */}
       {activeSpot && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl z-50 max-h-[70vh] overflow-y-auto">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl z-50 max-h-[80vh] overflow-y-auto">
           {/* ヘッダー */}
           <div className="flex items-start justify-between p-4 border-b border-slate-800">
             <div>
