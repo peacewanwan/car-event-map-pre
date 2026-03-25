@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Calendar } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 // ---------- Types ----------
@@ -516,13 +517,19 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
                     placeholder="車種（任意）"
                     className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
                   />
-                  <input
-                    type="date"
-                    value={planDate}
-                    onChange={(e) => setPlanDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
-                    className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors [color-scheme:dark]"
-                  />
+                  <div className="relative w-44">
+                    <Calendar
+                      size={15}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
+                    <input
+                      type="date"
+                      value={planDate}
+                      onChange={(e) => setPlanDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg pl-8 pr-3 py-2 focus:border-emerald-500 focus:outline-none [color-scheme:dark]"
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     {(['morning', 'afternoon', 'evening', 'flexible'] as const).map((slot) => (
                       <button
