@@ -430,6 +430,9 @@ export default function Home() {
             >
               オフ会メーカー
             </Link>
+            <a href="/faq" className="text-sm text-slate-400 hover:text-slate-200 transition-colors flex-shrink-0">
+              FAQ
+            </a>
             <button
               onClick={() => { setModalOpen(true); setSubmitResult(""); setSubmitError(""); }}
               className="text-sm font-medium px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500 hover:bg-emerald-500/10 transition-colors flex-shrink-0"

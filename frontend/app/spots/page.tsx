@@ -247,7 +247,10 @@ export default function SpotsPage() {
           <p className="text-center text-sm font-bold text-emerald-400">
             オフ会メーカー
           </p>
-          <div className="flex justify-end">
+          <div className="flex justify-end items-center gap-3">
+            <a href="/faq" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">
+              FAQ
+            </a>
             <button
               onClick={() => setHowToOpen(true)}
               className="text-xs px-3 py-1.5 rounded-lg border border-emerald-600/40 text-emerald-400 hover:bg-emerald-600/20 transition-colors"
