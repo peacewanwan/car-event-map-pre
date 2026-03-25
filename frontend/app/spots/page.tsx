@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { APIProvider } from '@vis.gl/react-google-maps'
 import Link from 'next/link'
 import SpotCard from './SpotCard'
+import MapView from './MapView'
 
 // ---------- Types ----------
 
@@ -14,6 +16,8 @@ type Spot = {
   prefecture: string | null
   lat: number
   lng: number
+  description: string | null
+  region: string | null
 }
 
 // ---------- SpotsPage ----------
@@ -272,8 +276,10 @@ export default function SpotsPage() {
 
       {/* ===== 地図タブ ===== */}
       {activeTab === 'map' && (
-        <div className="px-4 py-8 text-center text-slate-500 text-sm">
-          地図は次のステップで実装
+        <div className="h-[calc(100vh-120px)]">
+          <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''}>
+            <MapView spots={spots} />
+          </APIProvider>
         </div>
       )}
 

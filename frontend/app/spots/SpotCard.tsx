@@ -26,6 +26,13 @@ type CheckinUser = {
   expires_at: string
 }
 
+type PlanCheckin = {
+  id: string
+  nickname: string
+  vehicle_type: string | null
+  planned_at: string
+}
+
 // ---------- Constants ----------
 
 const CATEGORY_COLORS: Record<string, { text: string; bg: string }> = {
@@ -35,7 +42,7 @@ const CATEGORY_COLORS: Record<string, { text: string; bg: string }> = {
   '駐車場':    { text: 'text-slate-400',  bg: 'bg-slate-500/10' },
 }
 
-// ---------- Helper ----------
+// ---------- Helpers ----------
 
 function remainingTime(expiresAt: string): string {
   const diff = new Date(expiresAt).getTime() - Date.now()
@@ -49,6 +56,32 @@ function remainingTime(expiresAt: string): string {
 function formatCheckinTime(createdAt: string): string {
   const d = new Date(createdAt)
   return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function formatSelectedDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
+
+function generateCalendarMonths() {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const end = new Date()
+  end.setMonth(end.getMonth() + 1)
+  const months: { year: number; month: number; days: Date[] }[] = []
+  const cur = new Date(today)
+  while (cur <= end) {
+    const y = cur.getFullYear()
+    const m = cur.getMonth()
+    const last = months[months.length - 1]
+    if (!last || last.year !== y || last.month !== m) {
+      months.push({ year: y, month: m, days: [new Date(cur)] })
+    } else {
+      last.days.push(new Date(cur))
+    }
+    cur.setDate(cur.getDate() + 1)
+  }
+  return months
 }
 
 // ---------- SpotCard ----------
@@ -67,7 +100,7 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
   const [vehicleType, setVehicleType] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // ---- localStorage ----
+  // ---- checkin localStorage ----
   const storageKey = `checkin_${spot.id}`
   const [alreadyCheckedIn, setAlreadyCheckedIn] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -81,7 +114,29 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
     }
   })
 
-  // ---- fetch checkins（isOpen または refreshKey 変化で実行） ----
+  // ---- plan checkins ----
+  const [planCheckins, setPlanCheckins] = useState<PlanCheckin[]>([])
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [planRefreshKey, setPlanRefreshKey] = useState(0)
+
+  // ---- plan form ----
+  const planStorageKey = `plan_${spot.id}`
+  const [alreadyPlanned, setAlreadyPlanned] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const stored = localStorage.getItem(`plan_${spot.id}`)
+    if (!stored) return false
+    try {
+      const { plannedAt } = JSON.parse(stored)
+      return new Date(plannedAt) > new Date()
+    } catch {
+      return false
+    }
+  })
+  const [planNickname, setPlanNickname] = useState('')
+  const [planVehicle, setPlanVehicle] = useState('')
+  const [planDatetime, setPlanDatetime] = useState('')
+
+  // ---- fetch checkins ----
   useEffect(() => {
     if (!isOpen) return
     async function load() {
@@ -101,6 +156,27 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
     }
     load()
   }, [isOpen, refreshKey, spot.id])
+
+  // ---- fetch plans ----
+  useEffect(() => {
+    if (!isOpen) return
+    async function loadPlans() {
+      const supabase = createClient()
+      const now = new Date()
+      const oneMonthLater = new Date()
+      oneMonthLater.setMonth(oneMonthLater.getMonth() + 1)
+      const { data } = await supabase
+        .from('spot_checkins')
+        .select('id, nickname, vehicle_type, planned_at')
+        .eq('spot_id', spot.id)
+        .eq('checkin_type', 'plan')
+        .gte('planned_at', now.toISOString())
+        .lte('planned_at', oneMonthLater.toISOString())
+        .order('planned_at', { ascending: true })
+      setPlanCheckins(data || [])
+    }
+    loadPlans()
+  }, [isOpen, planRefreshKey, spot.id])
 
   // ---- checkin ----
   async function handleCheckin() {
@@ -142,6 +218,45 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
     localStorage.removeItem(storageKey)
     setAlreadyCheckedIn(false)
     setRefreshKey((k) => k + 1)
+  }
+
+  // ---- plan ----
+  async function handlePlan() {
+    if (!planNickname.trim() || !planDatetime || submitting) return
+    setSubmitting(true)
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('spot_checkins')
+      .insert({
+        spot_id: spot.id,
+        nickname: planNickname.trim(),
+        checkin_type: 'plan',
+        vehicle_type: planVehicle.trim() || null,
+        planned_at: new Date(planDatetime).toISOString(),
+      })
+      .select()
+      .single()
+    if (!error && data) {
+      localStorage.setItem(planStorageKey, JSON.stringify({ id: data.id, plannedAt: planDatetime }))
+      setAlreadyPlanned(true)
+      setPlanNickname('')
+      setPlanVehicle('')
+      setPlanDatetime('')
+      setPlanRefreshKey((k) => k + 1)
+    }
+    setSubmitting(false)
+  }
+
+  // ---- cancel plan ----
+  async function handleCancelPlan() {
+    const stored = localStorage.getItem(planStorageKey)
+    if (!stored) return
+    const supabase = createClient()
+    const { id } = JSON.parse(stored)
+    await supabase.from('spot_checkins').delete().eq('id', id)
+    localStorage.removeItem(planStorageKey)
+    setAlreadyPlanned(false)
+    setPlanRefreshKey((k) => k + 1)
   }
 
   // ---------- render ----------
@@ -215,7 +330,6 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
               <ul className="space-y-1 mb-4">
                 {checkins.map((c) => (
                   <li key={c.id} className="flex items-start gap-3 py-2">
-                    {/* アバターアイコン */}
                     <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 shrink-0 text-sm">
                       👤
                     </div>
@@ -233,7 +347,6 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
 
             <div className="border-t border-slate-800 pt-4 space-y-3">
               {alreadyCheckedIn ? (
-                /* 退出ボタン */
                 <button
                   onClick={handleCheckout}
                   className="w-full py-3 rounded-xl border border-slate-700 text-slate-400 text-sm hover:bg-slate-800 transition-colors"
@@ -241,7 +354,6 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
                   退出する
                 </button>
               ) : (
-                /* チェックイン入力フォーム */
                 <>
                   <input
                     type="text"
@@ -269,7 +381,136 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle }
             </div>
           </section>
 
-          {/* TODO: Step4 - 行く予定セクション */}
+          {/* ===== 行く予定セクション ===== */}
+          <section className="border-t border-slate-800 pt-4">
+            <p className="text-xs text-slate-500 font-medium tracking-wider mb-3">
+              行く予定
+            </p>
+
+            {/* カレンダー */}
+            {(() => {
+              const today = new Date()
+              today.setHours(0, 0, 0, 0)
+              const todayStr = today.toISOString().split('T')[0]
+              const plannedDates = new Set(planCheckins.map((c) => c.planned_at.split('T')[0]))
+              const calendarMonths = generateCalendarMonths()
+
+              return calendarMonths.map(({ year, month, days }) => {
+                const firstDow = days[0].getDay()
+                return (
+                  <div key={`${year}-${month}`} className="mb-4">
+                    <p className="text-xs text-slate-400 font-medium mb-2">
+                      {month + 1}月
+                    </p>
+                    <div className="grid grid-cols-7 text-center">
+                      {['日', '月', '火', '水', '木', '金', '土'].map((d) => (
+                        <div key={d} className="text-xs text-slate-600 py-1">{d}</div>
+                      ))}
+                      {Array.from({ length: firstDow }).map((_, i) => (
+                        <div key={`empty-${i}`} />
+                      ))}
+                      {days.map((day) => {
+                        const dateStr = day.toISOString().split('T')[0]
+                        const hasPlan = plannedDates.has(dateStr)
+                        const isToday = dateStr === todayStr
+                        const isSelected = selectedDate === dateStr
+
+                        return (
+                          <button
+                            key={dateStr}
+                            onClick={() => hasPlan ? setSelectedDate(isSelected ? null : dateStr) : undefined}
+                            disabled={!hasPlan}
+                            className={[
+                              'py-1 text-xs relative leading-6',
+                              isToday ? 'ring-1 ring-slate-600 rounded' : '',
+                              isSelected
+                                ? 'bg-emerald-500/30 rounded text-emerald-300 font-bold'
+                                : hasPlan
+                                  ? 'bg-emerald-500/20 text-emerald-300 font-bold cursor-pointer hover:bg-emerald-500/30 rounded'
+                                  : 'text-slate-500 cursor-default',
+                            ].filter(Boolean).join(' ')}
+                          >
+                            {day.getDate()}
+                            {hasPlan && (
+                              <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-400" />
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })
+            })()}
+
+            {/* 選択日の予定者 */}
+            {selectedDate && (
+              <div className="mt-3 space-y-2">
+                <p className="text-xs text-slate-500">{formatSelectedDate(selectedDate)} の予定</p>
+                {planCheckins
+                  .filter((c) => c.planned_at.startsWith(selectedDate))
+                  .map((c) => (
+                    <div key={c.id} className="flex items-center gap-2 py-1">
+                      <span className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 text-xs shrink-0">
+                        📅
+                      </span>
+                      <div>
+                        <p className="text-sm text-slate-200">{c.nickname}</p>
+                        <p className="text-xs text-slate-500">
+                          {c.vehicle_type && `${c.vehicle_type} · `}
+                          {new Date(c.planned_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                {planCheckins.filter((c) => c.planned_at.startsWith(selectedDate)).length === 0 && (
+                  <p className="text-xs text-slate-600 py-2">この日の予定はまだありません</p>
+                )}
+              </div>
+            )}
+
+            {/* 行く予定フォーム */}
+            <div className="border-t border-slate-800 mt-4 pt-4 space-y-3">
+              {alreadyPlanned ? (
+                <button
+                  onClick={handleCancelPlan}
+                  className="w-full py-3 rounded-xl border border-slate-700 text-slate-400 text-sm hover:bg-slate-800 transition-colors"
+                >
+                  予定をキャンセル
+                </button>
+              ) : (
+                <>
+                  <input
+                    type="text"
+                    value={planNickname}
+                    onChange={(e) => setPlanNickname(e.target.value)}
+                    placeholder="ニックネーム"
+                    className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                  <input
+                    type="text"
+                    value={planVehicle}
+                    onChange={(e) => setPlanVehicle(e.target.value)}
+                    placeholder="車種（任意）"
+                    className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                  <input
+                    type="datetime-local"
+                    value={planDatetime}
+                    onChange={(e) => setPlanDatetime(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors [color-scheme:dark]"
+                  />
+                  <button
+                    onClick={handlePlan}
+                    disabled={!planNickname.trim() || !planDatetime || submitting}
+                    className="w-full py-3 rounded-xl bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {submitting ? '登録中...' : 'ここに行く 登録する'}
+                  </button>
+                </>
+              )}
+            </div>
+          </section>
 
         </div>
       )}
