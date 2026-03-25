@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import SpotCard from './SpotCard'
 
 // ---------- Types ----------
 
@@ -21,7 +22,11 @@ export default function SpotsPage() {
   // ---- data ----
   const [spots, setSpots] = useState<Spot[]>([])
   const [nowCountMap, setNowCountMap] = useState<Record<number, number>>({})
+  const [planCountMap, setPlanCountMap] = useState<Record<number, number>>({})
   const [loading, setLoading] = useState(true)
+
+  // ---- accordion ----
+  const [openSpotId, setOpenSpotId] = useState<number | null>(null)
 
   // ---- UI state ----
   const [howToOpen, setHowToOpen] = useState(false)
@@ -38,7 +43,10 @@ export default function SpotsPage() {
       const supabase = createClient()
       const now = new Date().toISOString()
 
-      const [{ data: spotsData }, { data: nowCheckins }] = await Promise.all([
+      const oneMonthLater = new Date()
+      oneMonthLater.setMonth(oneMonthLater.getMonth() + 1)
+
+      const [{ data: spotsData }, { data: nowCheckins }, { data: planCheckins }] = await Promise.all([
         supabase.from('spots').select('*').order('prefecture'),
         supabase
           .from('spot_checkins')
@@ -46,15 +54,27 @@ export default function SpotsPage() {
           .eq('checkin_type', 'now')
           .is('left_at', null)
           .gt('expires_at', now),
+        supabase
+          .from('spot_checkins')
+          .select('spot_id')
+          .eq('checkin_type', 'plan')
+          .gte('planned_at', now)
+          .lte('planned_at', oneMonthLater.toISOString()),
       ])
 
-      const map: Record<number, number> = {}
+      const nowMap: Record<number, number> = {}
       nowCheckins?.forEach((c) => {
-        map[c.spot_id] = (map[c.spot_id] || 0) + 1
+        nowMap[c.spot_id] = (nowMap[c.spot_id] || 0) + 1
+      })
+
+      const planMap: Record<number, number> = {}
+      planCheckins?.forEach((c) => {
+        planMap[c.spot_id] = (planMap[c.spot_id] || 0) + 1
       })
 
       setSpots(spotsData || [])
-      setNowCountMap(map)
+      setNowCountMap(nowMap)
+      setPlanCountMap(planMap)
       setLoading(false)
     }
 
@@ -236,13 +256,14 @@ export default function SpotsPage() {
               </p>
             ) : (
               filteredSpots.map((spot) => (
-                // TODO: Step2 - SpotCard
-                <div
+                <SpotCard
                   key={spot.id}
-                  className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-slate-400 text-sm"
-                >
-                  {spot.name}（SpotCardは次のステップで実装）
-                </div>
+                  spot={spot}
+                  nowCount={nowCountMap[spot.id] || 0}
+                  planCount={planCountMap[spot.id] || 0}
+                  isOpen={openSpotId === spot.id}
+                  onToggle={() => setOpenSpotId(openSpotId === spot.id ? null : spot.id)}
+                />
               ))
             )}
           </div>
