@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps'
 import { createClient } from '@/lib/supabase/client'
+import { LocateFixed } from 'lucide-react'
 
 const supabase = createClient()
 
@@ -54,6 +55,13 @@ const PREF_LOCATIONS: Record<string, { lat: number; lng: number; zoom: number }>
 
 const JAPAN_DEFAULT = { lat: 36.5, lng: 137.0, zoom: 6 }
 
+const TIME_SLOT_LABEL: Record<string, string> = {
+  morning: '🌅 午前',
+  afternoon: '☀️ 午後',
+  evening: '🌆 夕方〜夜',
+  flexible: '🌀 気分次第',
+}
+
 function BluePin() {
   return (
     <svg width="28" height="36" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -72,6 +80,8 @@ function RedPin({ count }: { count: number }) {
     </svg>
   )
 }
+
+// ---------- Now チェックインセクション ----------
 
 function PopupCheckinSection({ spot }: { spot: Spot }) {
   const storageKey = `checkin_${spot.id}`
@@ -121,11 +131,12 @@ function PopupCheckinSection({ spot }: { spot: Spot }) {
   }
 
   return (
-    <div className="px-4 py-3">
+    <div>
+      <p className="text-xs text-slate-500 font-medium tracking-wider mb-2">今いるナウ</p>
       {alreadyCheckedIn ? (
         <button
           onClick={handleCheckout}
-          className="w-full py-2.5 rounded-xl border border-slate-700 text-slate-400 text-sm"
+          className="w-full py-2.5 rounded-xl border border-slate-700 text-slate-400 text-sm hover:bg-slate-800 transition-colors"
         >
           退出する
         </button>
@@ -148,7 +159,7 @@ function PopupCheckinSection({ spot }: { spot: Spot }) {
           <button
             onClick={handleCheckin}
             disabled={!nickname.trim() || submitting}
-            className="w-full py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-bold disabled:opacity-40"
+            className="w-full py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-bold disabled:opacity-40 hover:bg-emerald-400 transition-colors"
           >
             {submitting ? '登録中...' : 'ここにいるナウ 登録する'}
           </button>
@@ -158,7 +169,127 @@ function PopupCheckinSection({ spot }: { spot: Spot }) {
   )
 }
 
-// useMap() を使うためだけの子コンポーネント
+// ---------- 行く予定セクション ----------
+
+function PopupPlanSection({ spot }: { spot: Spot }) {
+  const planStorageKey = `plan_${spot.id}`
+  const [alreadyPlanned, setAlreadyPlanned] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const stored = localStorage.getItem(`plan_${spot.id}`)
+    if (!stored) return false
+    try {
+      const { plannedAt } = JSON.parse(stored)
+      return new Date(plannedAt + 'T23:59:59+09:00') > new Date()
+    } catch {
+      return false
+    }
+  })
+  const [planNickname, setPlanNickname] = useState('')
+  const [planVehicle, setPlanVehicle] = useState('')
+  const [planDate, setPlanDate] = useState('')
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handlePlan() {
+    if (!planNickname.trim() || !planDate || !selectedTimeSlot || submitting) return
+    setSubmitting(true)
+    const { data, error } = await supabase
+      .from('spot_checkins')
+      .insert({
+        spot_id: spot.id,
+        nickname: planNickname.trim(),
+        checkin_type: 'plan',
+        vehicle_type: planVehicle.trim() || null,
+        planned_at: `${planDate}T00:00:00+09:00`,
+        time_slot: selectedTimeSlot,
+        comment: null,
+      })
+      .select()
+      .single()
+    if (!error && data) {
+      localStorage.setItem(planStorageKey, JSON.stringify({ id: data.id, plannedAt: planDate }))
+      setAlreadyPlanned(true)
+      setPlanNickname('')
+      setPlanVehicle('')
+      setPlanDate('')
+      setSelectedTimeSlot(null)
+    }
+    setSubmitting(false)
+  }
+
+  async function handleCancelPlan() {
+    const stored = localStorage.getItem(planStorageKey)
+    if (!stored) return
+    const { id } = JSON.parse(stored)
+    await supabase.from('spot_checkins').delete().eq('id', id)
+    localStorage.removeItem(planStorageKey)
+    setAlreadyPlanned(false)
+  }
+
+  return (
+    <div>
+      <p className="text-xs text-slate-500 font-medium tracking-wider mb-2">行く予定</p>
+      {alreadyPlanned ? (
+        <button
+          onClick={handleCancelPlan}
+          className="w-full py-2.5 rounded-xl border border-slate-700 text-slate-400 text-sm hover:bg-slate-800 transition-colors"
+        >
+          予定をキャンセル
+        </button>
+      ) : (
+        <div className="space-y-2">
+          <input
+            type="text"
+            placeholder="ニックネーム"
+            value={planNickname}
+            onChange={(e) => setPlanNickname(e.target.value)}
+            className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+          />
+          <input
+            type="text"
+            placeholder="車種（任意）"
+            value={planVehicle}
+            onChange={(e) => setPlanVehicle(e.target.value)}
+            className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+          />
+          <input
+            type="date"
+            value={planDate}
+            onChange={(e) => setPlanDate(e.target.value)}
+            min={new Date().toISOString().split('T')[0]}
+            className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500 [color-scheme:dark]"
+          />
+          <div className="grid grid-cols-2 gap-2">
+            {(['morning', 'afternoon', 'evening', 'flexible'] as const).map((slot) => (
+              <button
+                key={slot}
+                type="button"
+                onClick={() => setSelectedTimeSlot(selectedTimeSlot === slot ? null : slot)}
+                className={
+                  selectedTimeSlot === slot
+                    ? 'border border-emerald-500 text-emerald-400 bg-emerald-950/30 rounded-lg px-3 py-2 text-sm'
+                    : 'border border-slate-700 text-slate-400 rounded-lg px-3 py-2 text-sm hover:border-slate-600'
+                }
+              >
+                {TIME_SLOT_LABEL[slot]}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={handlePlan}
+            disabled={!planNickname.trim() || !planDate || !selectedTimeSlot || submitting}
+            className="w-full py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-bold disabled:opacity-40 hover:bg-emerald-400 transition-colors"
+          >
+            {submitting ? '登録中...' : 'ここに行く 登録する'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------- useMap() を使うためだけの子コンポーネント ----------
+
 function MapInner({ onMapReady }: { onMapReady: (map: google.maps.Map) => void }) {
   const map = useMap()
   useEffect(() => {
@@ -167,8 +298,15 @@ function MapInner({ onMapReady }: { onMapReady: (map: google.maps.Map) => void }
   return null
 }
 
+// ---------- タブ ----------
+
+type PopupTab = 'now' | 'plan'
+
+// ---------- MapView ----------
+
 export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
   const [activeSpot, setActiveSpot] = useState<Spot | null>(null)
+  const [activeTab, setActiveTab] = useState<PopupTab>('now')
   const [prefFilter, setPrefFilter] = useState('')
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null)
 
@@ -194,6 +332,11 @@ export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
     })
   }
 
+  function handleMarkerClick(spot: Spot) {
+    setActiveSpot(spot)
+    setActiveTab('now')
+  }
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       {/* 地図本体 */}
@@ -203,7 +346,6 @@ export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
         defaultZoom={JAPAN_DEFAULT.zoom}
         style={{ width: '100%', height: '100%' }}
       >
-        {/* MapInner は useMap() のためだけに Map の子として置く */}
         <MapInner onMapReady={setMapInstance} />
 
         {/* マーカー */}
@@ -211,7 +353,7 @@ export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
           <AdvancedMarker
             key={spot.id}
             position={{ lat: spot.lat, lng: spot.lng }}
-            onClick={() => setActiveSpot(spot)}
+            onClick={() => handleMarkerClick(spot)}
           >
             {(nowCountMap[spot.id] ?? 0) >= 1 ? (
               <RedPin count={nowCountMap[spot.id]} />
@@ -222,34 +364,31 @@ export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
         ))}
       </Map>
 
-      {/* 都道府県フィルター（左上）：Map の兄弟要素 */}
-      <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 10 }}>
+      {/* 右上オーバーレイ：都道府県フィルタ＋現在地ボタン */}
+      <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
         <select
           value={prefFilter}
           onChange={(e) => handlePrefChange(e.target.value)}
-          className="px-3 py-2 bg-slate-900/90 backdrop-blur border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
+          className="bg-slate-900 border border-slate-600 text-slate-200 text-sm rounded-lg px-2 py-2 shadow-lg focus:border-emerald-500 focus:outline-none"
         >
-          <option value="">日本全体</option>
+          <option value="">都道府県</option>
           {prefOptions.map((p) => (
             <option key={p} value={p}>{p}</option>
           ))}
         </select>
-      </div>
-
-      {/* 現在地ボタン（右上）：Map の兄弟要素 */}
-      <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
         <button
           onClick={handleGeolocate}
-          className="w-10 h-10 bg-slate-900/90 backdrop-blur border border-slate-700 rounded-lg flex items-center justify-center text-slate-300 hover:border-emerald-500 transition-colors"
-          title="現在地"
+          className="bg-slate-900 border border-slate-600 text-slate-200 hover:border-emerald-500 hover:text-emerald-400 rounded-lg p-2 shadow-lg transition-colors"
+          title="現在地に移動"
         >
-          📍
+          <LocateFixed size={18} />
         </button>
       </div>
 
-      {/* 画面下部固定ポップアップ（fixed なので Map の外でも問題なし） */}
+      {/* 画面下部固定ポップアップ（中央寄せ・max-w-sm） */}
       {activeSpot && (
-        <div className="fixed bottom-0 left-0 right-0 z-20 bg-slate-900 border-t border-slate-700 rounded-t-2xl shadow-2xl max-h-[60vh] overflow-y-auto">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl z-50 max-h-[70vh] overflow-y-auto">
+          {/* ヘッダー */}
           <div className="flex items-start justify-between p-4 border-b border-slate-800">
             <div>
               <h3 className="font-bold text-slate-100">{activeSpot.name}</h3>
@@ -257,9 +396,16 @@ export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
                 {activeSpot.prefecture} · {activeSpot.category}
               </p>
             </div>
-            <button onClick={() => setActiveSpot(null)} className="text-slate-500 hover:text-slate-300 p-1">✕</button>
+            <button
+              onClick={() => setActiveSpot(null)}
+              className="text-slate-500 hover:text-slate-300 p-1 ml-2 shrink-0"
+            >
+              ✕
+            </button>
           </div>
-          <div className="flex gap-3 px-4 py-3 border-b border-slate-800">
+
+          {/* カウント表示 */}
+          <div className="flex gap-3 px-4 py-2 border-b border-slate-800">
             <span className="text-sm text-slate-300">
               🔴 今{nowCountMap[activeSpot.id] || 0}人
               {(nowCountMap[activeSpot.id] || 0) >= 1 && (
@@ -267,7 +413,35 @@ export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
               )}
             </span>
           </div>
-          <PopupCheckinSection spot={activeSpot} />
+
+          {/* タブ */}
+          <div className="flex border-b border-slate-800">
+            {(['now', 'plan'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-2.5 text-sm font-medium relative transition-colors ${
+                  activeTab === tab ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                {tab === 'now' ? '🔴 今いるナウ' : '📅 行く予定'}
+                {activeTab === tab && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400 rounded-full" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* タブコンテンツ */}
+          <div className="p-4">
+            {activeTab === 'now' ? (
+              <PopupCheckinSection spot={activeSpot} />
+            ) : (
+              <PopupPlanSection spot={activeSpot} />
+            )}
+          </div>
+
+          {/* リストリンク */}
           {onSpotSelect && (
             <div className="px-4 pb-4">
               <button
