@@ -366,12 +366,12 @@ def crawl_minkara(site_name, site_url):
             )
             if table:
                 for row in table.find_all("tr"):
-                    th = row.find("th")
-                    td = row.find("td")
-                    if not th or not td:
+                    # みんカラのdetailTableは th なしで td/td 構造
+                    cells = row.find_all("td")
+                    if len(cells) < 2:
                         continue
-                    label = th.get_text(strip=True)
-                    value = td.get_text(strip=True)
+                    label = cells[0].get_text(strip=True)
+                    value = cells[1].get_text(strip=True)
 
                     if any(k in label for k in ["タイトル", "イベント名", "名称"]):
                         event["name"] = value
@@ -387,13 +387,17 @@ def crawl_minkara(site_name, site_url):
                     elif "ジャンル" in label:
                         event["genre"] = value
 
-            # イベント名フォールバック
+            # イベント名フォールバック（h1.content-title-201612 → 非空h1 → h2）
             if not event.get("name"):
-                for selector in ["h1", "h2", ".eventTitle", ".event-title"]:
-                    el = soup.select_one(selector)
-                    if el:
-                        event["name"] = el.get_text(strip=True)
-                        break
+                el = soup.select_one("h1.content-title-201612")
+                if not el:
+                    for h in soup.find_all(["h1", "h2"]):
+                        text = h.get_text(strip=True)
+                        if text:
+                            el = h
+                            break
+                if el:
+                    event["name"] = el.get_text(strip=True)
 
             # 日付パース
             event["event_date"] = _parse_minkara_date(event.pop("raw_date", None))
