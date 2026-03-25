@@ -399,8 +399,17 @@ def crawl_minkara(site_name, site_url):
                 if el:
                     event["name"] = el.get_text(strip=True)
 
+            # source_url は必ず詳細ページURL
+            event["source_url"] = detail_url
+
             # 日付パース
             event["event_date"] = _parse_minkara_date(event.pop("raw_date", None))
+
+            # 過去イベントはスキップ
+            if event["event_date"] and event["event_date"] < datetime.now().strftime("%Y-%m-%d"):
+                print(f"  [SKIP] ID={event_id}: 過去イベント ({event['event_date']})")
+                time.sleep(1)
+                continue
 
             # 場所パース
             raw_location = event.pop("raw_location", None)
