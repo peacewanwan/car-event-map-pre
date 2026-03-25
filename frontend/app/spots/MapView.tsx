@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps'
 import { createClient } from '@/lib/supabase/client'
 
@@ -158,10 +158,19 @@ function PopupCheckinSection({ spot }: { spot: Spot }) {
   )
 }
 
-function MapInner({ spots, nowCountMap, onSpotSelect }: Props) {
+// useMap() を使うためだけの子コンポーネント
+function MapInner({ onMapReady }: { onMapReady: (map: google.maps.Map) => void }) {
   const map = useMap()
+  useEffect(() => {
+    if (map) onMapReady(map)
+  }, [map, onMapReady])
+  return null
+}
+
+export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
   const [activeSpot, setActiveSpot] = useState<Spot | null>(null)
   const [prefFilter, setPrefFilter] = useState('')
+  const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null)
 
   const prefOptions = Array.from(
     new Set(spots.map((s) => s.prefecture).filter(Boolean) as string[])
@@ -169,30 +178,35 @@ function MapInner({ spots, nowCountMap, onSpotSelect }: Props) {
 
   function handlePrefChange(pref: string) {
     setPrefFilter(pref)
-    if (!map) return
+    if (!mapInstance) return
     const loc = pref ? PREF_LOCATIONS[pref] : JAPAN_DEFAULT
     if (loc) {
-      map.panTo({ lat: loc.lat, lng: loc.lng })
-      map.setZoom(loc.zoom ?? 9)
+      mapInstance.panTo({ lat: loc.lat, lng: loc.lng })
+      mapInstance.setZoom(loc.zoom ?? 9)
     }
   }
 
   function handleGeolocate() {
-    if (!navigator.geolocation || !map) return
+    if (!navigator.geolocation || !mapInstance) return
     navigator.geolocation.getCurrentPosition((pos) => {
-      map.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude })
-      map.setZoom(11)
+      mapInstance.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+      mapInstance.setZoom(11)
     })
   }
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {/* 地図本体 */}
       <Map
         mapId="DEMO_MAP_ID"
         defaultCenter={{ lat: JAPAN_DEFAULT.lat, lng: JAPAN_DEFAULT.lng }}
         defaultZoom={JAPAN_DEFAULT.zoom}
         style={{ width: '100%', height: '100%' }}
       >
+        {/* MapInner は useMap() のためだけに Map の子として置く */}
+        <MapInner onMapReady={setMapInstance} />
+
+        {/* マーカー */}
         {spots.map((spot) => (
           <AdvancedMarker
             key={spot.id}
@@ -208,7 +222,7 @@ function MapInner({ spots, nowCountMap, onSpotSelect }: Props) {
         ))}
       </Map>
 
-      {/* 都道府県フィルターオーバーレイ（左上） */}
+      {/* 都道府県フィルター（左上）：Map の兄弟要素 */}
       <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 10 }}>
         <select
           value={prefFilter}
@@ -222,7 +236,7 @@ function MapInner({ spots, nowCountMap, onSpotSelect }: Props) {
         </select>
       </div>
 
-      {/* 現在地ボタン（右上） */}
+      {/* 現在地ボタン（右上）：Map の兄弟要素 */}
       <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
         <button
           onClick={handleGeolocate}
@@ -233,10 +247,9 @@ function MapInner({ spots, nowCountMap, onSpotSelect }: Props) {
         </button>
       </div>
 
-      {/* 画面下部固定ポップアップ */}
+      {/* 画面下部固定ポップアップ（fixed なので Map の外でも問題なし） */}
       {activeSpot && (
         <div className="fixed bottom-0 left-0 right-0 z-20 bg-slate-900 border-t border-slate-700 rounded-t-2xl shadow-2xl max-h-[60vh] overflow-y-auto">
-          {/* ヘッダー */}
           <div className="flex items-start justify-between p-4 border-b border-slate-800">
             <div>
               <h3 className="font-bold text-slate-100">{activeSpot.name}</h3>
@@ -244,13 +257,8 @@ function MapInner({ spots, nowCountMap, onSpotSelect }: Props) {
                 {activeSpot.prefecture} · {activeSpot.category}
               </p>
             </div>
-            <button
-              onClick={() => setActiveSpot(null)}
-              className="text-slate-500 hover:text-slate-300 p-1"
-            >✕</button>
+            <button onClick={() => setActiveSpot(null)} className="text-slate-500 hover:text-slate-300 p-1">✕</button>
           </div>
-
-          {/* バッジ */}
           <div className="flex gap-3 px-4 py-3 border-b border-slate-800">
             <span className="text-sm text-slate-300">
               🔴 今{nowCountMap[activeSpot.id] || 0}人
@@ -259,11 +267,7 @@ function MapInner({ spots, nowCountMap, onSpotSelect }: Props) {
               )}
             </span>
           </div>
-
-          {/* チェックインUI */}
           <PopupCheckinSection spot={activeSpot} />
-
-          {/* リストで見るボタン */}
           {onSpotSelect && (
             <div className="px-4 pb-4">
               <button
@@ -278,8 +282,4 @@ function MapInner({ spots, nowCountMap, onSpotSelect }: Props) {
       )}
     </div>
   )
-}
-
-export default function MapView(props: Props) {
-  return <MapInner {...props} />
 }
