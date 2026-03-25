@@ -278,7 +278,14 @@ export default function SpotsPage() {
       {activeTab === 'map' && (
         <div className="h-[calc(100vh-120px)]">
           <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''}>
-            <MapView spots={spots} />
+            <MapView
+              spots={spots}
+              nowCountMap={nowCountMap}
+              onSpotSelect={(spotId) => {
+                setActiveTab('list')
+                setOpenSpotId(spotId)
+              }}
+            />
           </APIProvider>
         </div>
       )}
