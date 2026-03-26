@@ -588,6 +588,10 @@ def crawl_eventmania(site_name: str, site_url: str) -> list:
                 if not name:
                     continue
 
+                # source_urlがmach5.jp内（詳細ページなし）の場合はsite_urlに統一
+                if "mach5.jp" in event_source_url:
+                    event_source_url = site_url
+
                 # 日付
                 date_div = box.find("div", class_="date")
                 start_date = None
@@ -710,6 +714,9 @@ def normalize(text, site_name, site_url, prefetched_events=None):
 # ---------------------------------------------------------------
 
 def save_events(events):
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    events = [e for e in events if e.get("event_date") and e["event_date"] >= today_str]
+
     saved = 0
     updated = 0
     skipped = 0

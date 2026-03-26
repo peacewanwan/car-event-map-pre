@@ -67,13 +67,10 @@ def check_robots(base_url: str) -> bool:
         if res.status_code != 200:
             return True  # robots.txt なし → OK
         text = res.text.lower()
-        # Disallow: / または Disallow: /* → NG
+        # 行全体が "disallow: /" の場合のみ NG（部分一致・/* は除外）
         for line in text.splitlines():
-            line = line.strip()
-            if line.startswith("disallow:"):
-                path = line.split(":", 1)[1].strip()
-                if path in ("/", "/*"):
-                    return False
+            if line.strip() == "disallow: /":
+                return False
         return True
     except Exception:
         return True  # 取得失敗 → OK扱い

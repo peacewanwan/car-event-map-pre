@@ -174,7 +174,7 @@ function EventCard({ event }: { event: Event }) {
               rel="noopener noreferrer"
               className="flex-1 text-center text-sm font-medium bg-sky-600/20 text-sky-300 lg:text-sky-700 border border-sky-600/30 rounded-lg py-1.5 hover:bg-sky-600/30 transition-colors"
             >
-              詳細を見る
+              {event.source_url === event.source_site_url ? "情報元を見る" : "詳細を見る"}
             </a>
           ) : (
             <span className="flex-1" />
