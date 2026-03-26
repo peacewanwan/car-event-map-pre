@@ -116,14 +116,14 @@ function EventCard({ event }: { event: Event }) {
   const navUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue || event.name)}`;
 
   return (
-    <li className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+    <li className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-card)] overflow-hidden">
       {/* カテゴリカラーバー */}
       {bar && <div className={`h-0.5 w-full ${bar}`} />}
 
       <div className="px-4 py-3">
         {/* 日付・バッジ行 */}
         <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
-          <span className="text-sky-400 text-sm font-semibold">{formatDateRange(event.event_date, event.event_date_end)}</span>
+          <span className="text-[var(--accent)] text-sm font-semibold">{formatDateRange(event.event_date, event.event_date_end)}</span>
           {db && (
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${db.classes}`}>
               {db.label}
@@ -145,7 +145,7 @@ function EventCard({ event }: { event: Event }) {
         <p className="text-white font-bold text-base leading-snug mb-2">{event.name}</p>
 
         {/* 場所・車種 */}
-        <div className="space-y-0.5 mb-2 text-sm text-slate-400">
+        <div className="space-y-0.5 mb-2 text-sm text-[var(--text-sub)]">
           {(event.prefecture || event.venue) && (
             <p>📍 {[event.prefecture, event.venue].filter(Boolean).join(" · ")}</p>
           )}
@@ -158,7 +158,7 @@ function EventCard({ event }: { event: Event }) {
         {event.keywords && event.keywords.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-3">
             {event.keywords.slice(0, 3).map((kw, i) => (
-              <span key={i} className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+              <span key={i} className="text-xs px-2 py-0.5 rounded bg-[var(--bg-input)] text-[var(--text-sub)]">
                 #{kw}
               </span>
             ))}
@@ -183,7 +183,7 @@ function EventCard({ event }: { event: Event }) {
             href={navUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-medium bg-slate-800 text-slate-300 border border-slate-700 rounded-lg px-3 py-1.5 hover:bg-slate-700 transition-colors flex-shrink-0"
+            className="text-sm font-medium bg-[var(--bg-input)] text-[var(--text-main)] border border-[var(--border-card)] rounded-lg px-3 py-1.5 hover:bg-[var(--bg-card)] transition-colors flex-shrink-0"
           >
             🗺️ ナビ
           </a>
@@ -216,7 +216,7 @@ function EventCard({ event }: { event: Event }) {
 
 function RecurringCard({ ev }: { ev: RecurringEvent }) {
   return (
-    <li className="bg-slate-900 rounded-xl border border-slate-800 border-l-2 border-l-sky-500 px-4 py-4">
+    <li className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-card)] border-l-2 border-l-sky-500 px-4 py-4">
       <div className="flex items-start justify-between gap-2 mb-2">
         <p className="text-white font-semibold text-sm leading-snug">{ev.name}</p>
         {ev.frequency && (
@@ -226,7 +226,7 @@ function RecurringCard({ ev }: { ev: RecurringEvent }) {
         )}
       </div>
 
-      <div className="space-y-0.5 mb-3 text-sm text-slate-400">
+      <div className="space-y-0.5 mb-3 text-sm text-[var(--text-sub)]">
         {(ev.prefecture || ev.venue) && (
           <p>📍 {[ev.prefecture, ev.venue].filter(Boolean).join(" · ")}</p>
         )}
@@ -243,7 +243,7 @@ function RecurringCard({ ev }: { ev: RecurringEvent }) {
           href={ev.source_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm text-sky-400 hover:text-sky-300 transition-colors"
+          className="text-sm text-[var(--accent)] hover:text-sky-300 transition-colors"
         >
           詳細・次回開催日を確認 →
         </a>
@@ -422,10 +422,10 @@ export default function Home() {
   // ---------- JSX ----------
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-[var(--bg-page)] text-white">
 
       {/* ===== ヘッダー ===== */}
-      <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur border-b border-slate-800">
+      <header className="sticky top-0 z-30 bg-[var(--bg-header)]/80 backdrop-blur border-b border-[var(--border-card)]">
         <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <h1 className="text-base font-bold text-white tracking-tight flex-shrink-0">
             2輪4輪 offmap
@@ -459,9 +459,9 @@ export default function Home() {
 
         <div className="relative">
           <h1 className="text-3xl font-black tracking-tight mb-2">
-            2輪4輪 <span className="text-sky-400">offmap</span>
+            2輪4輪 <span className="text-[var(--accent)]">offmap</span>
           </h1>
-          <p className="text-slate-400 text-sm mb-5">はじめてのオフ会が、すぐ見つかる。</p>
+          <p className="text-[var(--text-sub)] text-sm mb-5">はじめてのオフ会が、すぐ見つかる。</p>
 
           <div className="flex flex-col items-center gap-1 text-sm text-slate-500 mb-6">
             <span>✓ 全国のイベントを自動収集</span>
@@ -471,7 +471,7 @@ export default function Home() {
 
           <button
             onClick={() => setFilterOpen((v) => !v)}
-            className="lg:hidden inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors"
+            className="lg:hidden inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-[var(--bg-input)] text-[var(--text-main)] border border-[var(--border-card)] hover:bg-[var(--bg-card)] transition-colors"
           >
             {filterOpen ? "🔼 絞り込みを閉じる" : "🔽 条件を絞り込む"}
           </button>
@@ -485,7 +485,7 @@ export default function Home() {
       {/* ===== フィルターパネル ===== */}
       <div className={!filterOpen ? "hidden lg:block" : ""}>
         <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 pb-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
+          <div className="bg-[var(--bg-filter)] border border-[var(--border-card)] rounded-xl p-4 space-y-3">
 
             {/* フリーワード */}
             <input
@@ -493,7 +493,7 @@ export default function Home() {
               value={freeword}
               onChange={(e) => setFreeword(e.target.value)}
               placeholder="キーワードで検索（例：ロードスター、筑波、走行会）"
-              className="w-full text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+              className="w-full text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
             />
 
             {/* 車種・エリア */}
@@ -501,7 +501,7 @@ export default function Home() {
               <select
                 value={vehicle}
                 onChange={(e) => setVehicle(e.target.value)}
-                className="text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                className="text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
               >
                 <option value="">車種：すべて</option>
                 {vehicles.map((v) => <option key={v} value={v}>{v}</option>)}
@@ -509,7 +509,7 @@ export default function Home() {
               <select
                 value={prefecture}
                 onChange={(e) => setPrefecture(e.target.value)}
-                className="text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                className="text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
               >
                 <option value="">エリア：すべて</option>
                 {prefectures.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -525,7 +525,7 @@ export default function Home() {
                   className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
                     category === opt.value
                       ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
-                      : "bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600"
+                      : "bg-[var(--bg-input)] text-[var(--text-sub)] border-[var(--border-card)] hover:border-slate-600"
                   }`}
                 >
                   {opt.label}
@@ -539,19 +539,19 @@ export default function Home() {
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                className="text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
               />
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                className="text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
               />
             </div>
 
             <button
               onClick={handleReset}
-              className="w-full text-sm text-slate-400 border border-slate-700 rounded-lg py-2 hover:bg-slate-800 transition-colors"
+              className="w-full text-sm text-[var(--text-sub)] border border-[var(--border-card)] rounded-lg py-2 hover:bg-[var(--bg-input)] transition-colors"
             >
               条件をリセット
             </button>
@@ -560,19 +560,19 @@ export default function Home() {
       </div>
 
       {/* ===== タブ（sticky） ===== */}
-      <div className="sticky top-12 z-20 bg-slate-950/90 backdrop-blur border-b border-slate-800">
+      <div className="sticky top-12 z-20 bg-[var(--bg-header)]/90 backdrop-blur border-b border-[var(--border-card)]">
         <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 flex">
           {(["events", "recurring"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={`flex-1 py-3 text-sm font-medium relative transition-colors ${
-                tab === t ? "text-sky-400" : "text-slate-500 hover:text-slate-300"
+                tab === t ? "text-[var(--accent)]" : "text-slate-500 hover:text-slate-300"
               }`}
             >
               {t === "events" ? "イベント一覧" : "定期開催"}
               {tab === t && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-400 rounded-full" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)] rounded-full" />
               )}
             </button>
           ))}
@@ -585,7 +585,7 @@ export default function Home() {
         {/* 件数 + 解除ボタン */}
         {tab === "events" && !loading && (
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-[var(--text-sub)]">
               {isFiltered
                 ? `${filteredEvents.length}件 / 全${allEvents.length}件`
                 : `${filteredEvents.length}件のイベント`}
@@ -606,7 +606,7 @@ export default function Home() {
           <>
             {loading ? (
               <div className="flex justify-center py-20">
-                <div className="w-5 h-5 border-2 border-slate-700 border-t-sky-400 rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-slate-700 border-t-[var(--accent)] rounded-full animate-spin" />
               </div>
             ) : filteredEvents.length === 0 ? (
               <p className="text-center text-slate-500 py-20 text-sm">イベント情報がありません</p>
@@ -622,7 +622,7 @@ export default function Home() {
               <div className="flex justify-center pt-4">
                 <button
                   onClick={() => setDisplayCount((prev) => prev + 30)}
-                  className="text-sm text-slate-400 border border-slate-700 rounded-lg px-6 py-2.5 hover:bg-slate-800 transition-colors"
+                  className="text-sm text-[var(--text-sub)] border border-[var(--border-card)] rounded-lg px-6 py-2.5 hover:bg-[var(--bg-card)] transition-colors"
                 >
                   もっと読み込む（残り{filteredEvents.length - displayCount}件）
                 </button>
@@ -636,7 +636,7 @@ export default function Home() {
           <>
             {recurringLoading ? (
               <div className="flex justify-center py-20">
-                <div className="w-5 h-5 border-2 border-slate-700 border-t-sky-400 rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-slate-700 border-t-[var(--accent)] rounded-full animate-spin" />
               </div>
             ) : recurringEvents.length === 0 ? (
               <p className="text-center text-slate-500 py-20 text-sm">定期開催イベントがありません</p>
@@ -657,7 +657,7 @@ export default function Home() {
           onClick={() => { setModalOpen(false); setSubmitText(""); setSubmitResult(""); }}
         >
           <div
-            className="absolute bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 rounded-t-2xl p-6 space-y-4 max-h-[80vh] overflow-y-auto"
+            className="absolute bottom-0 left-0 right-0 bg-[var(--bg-card)] border-t border-[var(--border-card)] rounded-t-2xl p-6 space-y-4 max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -670,7 +670,7 @@ export default function Home() {
               </button>
             </div>
 
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-[var(--text-sub)]">
               SNSの告知文やイベント情報をそのままコピペするだけでOKです。AIが自動解析して登録します。
             </p>
 
@@ -683,7 +683,7 @@ export default function Home() {
                   onChange={(e) => setSubmitText(e.target.value)}
                   rows={6}
                   placeholder={`例）\n【ロードスターミーティング】\n日時：4月20日（日）10:00〜\n場所：道の駅 富士川楽座（静岡県富士市）\n対象：ロードスター全型式\n参加費：無料・事前申込不要`}
-                  className="w-full text-sm bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40 resize-none"
+                  className="w-full text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40 resize-none"
                 />
                 {submitResult === "error" && (
                   <p className="text-sm text-red-400">{submitError}</p>
@@ -691,7 +691,7 @@ export default function Home() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => { setModalOpen(false); setSubmitText(""); setSubmitResult(""); }}
-                    className="flex-1 text-sm text-slate-400 border border-slate-700 rounded-lg py-2.5 hover:bg-slate-800 transition-colors"
+                    className="flex-1 text-sm text-[var(--text-sub)] border border-[var(--border-card)] rounded-lg py-2.5 hover:bg-[var(--bg-input)] transition-colors"
                   >
                     キャンセル
                   </button>

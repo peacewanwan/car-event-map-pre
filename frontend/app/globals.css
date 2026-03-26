@@ -3,6 +3,32 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* テーマカラー（モバイル：ダーク） */
+  --bg-page:    #020617;  /* slate-950 */
+  --bg-card:    #0f172a;  /* slate-900 */
+  --bg-filter:  #0f172a;  /* slate-900 */
+  --bg-input:   #1e293b;  /* slate-800 */
+  --bg-header:  #020617;  /* slate-950 */
+  --border-card: #1e293b; /* slate-800 */
+  --text-main:  #f1f5f9;  /* slate-100 */
+  --text-sub:   #94a3b8;  /* slate-400 */
+  --accent:     #38bdf8;  /* sky-400   */
+}
+
+@media (min-width: 1024px) {
+  :root {
+    /* テーマカラー（デスクトップ：ミッドトーンライト） */
+    --bg-page:    #334155;  /* slate-700 */
+    --bg-card:    #475569;  /* slate-600 */
+    --bg-filter:  #475569;  /* slate-600 */
+    --bg-input:   #64748b;  /* slate-500 */
+    --bg-header:  #334155;  /* slate-700 */
+    --border-card: #64748b; /* slate-500 */
+    --text-main:  #ffffff;  /* white     */
+    --text-sub:   #e2e8f0;  /* slate-200 */
+    --accent:     #7dd3fc;  /* sky-300   */
+  }
 }
 
 @theme inline {
