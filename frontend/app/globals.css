@@ -18,24 +18,23 @@
 
 @media (min-width: 1024px) {
   :root {
-    /* テーマカラー（デスクトップ：ミッドトーンライト） */
-    --background: #334155;  /* slate-700 */
-    --foreground: #ffffff;
-    --bg-page:    #334155;  /* slate-700 */
-    --bg-card:    #475569;  /* slate-600 */
-    --bg-filter:  #475569;  /* slate-600 */
-    --bg-input:   #64748b;  /* slate-500 */
-    --bg-header:  #334155;  /* slate-700 */
-    --border-card: #64748b; /* slate-500 */
-    --text-main:  #ffffff;  /* white     */
-    --text-sub:   #e2e8f0;  /* slate-200 */
-    --accent:     #7dd3fc;  /* sky-300   */
+    --background: #f1f5f9;      /* slate-100 */
+    --foreground: #0f172a;      /* slate-900 */
+    --bg-page: #f1f5f9;         /* slate-100 */
+    --bg-card: #ffffff;         /* white */
+    --bg-filter: #ffffff;
+    --bg-input: #f1f5f9;        /* slate-100 */
+    --bg-header: #ffffff;
+    --border-card: #e2e8f0;     /* slate-200 */
+    --text-main: #0f172a;       /* slate-900 */
+    --text-sub: #64748b;        /* slate-500 */
+    --accent: #0284c7;          /* sky-600 */
   }
 
   /* body を直接上書き（cascade 順序問題の保険） */
   body {
-    background: #334155;
-    color: #ffffff;
+    background: #f1f5f9;
+    color: #0f172a;
   }
 }
 
