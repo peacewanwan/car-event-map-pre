@@ -426,7 +426,7 @@ export default function Home() {
 
       {/* ===== ヘッダー ===== */}
       <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur border-b border-slate-800">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <h1 className="text-base font-bold text-white tracking-tight flex-shrink-0">
             2輪4輪 offmap
           </h1>
@@ -471,7 +471,7 @@ export default function Home() {
 
           <button
             onClick={() => setFilterOpen((v) => !v)}
-            className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors"
+            className="lg:hidden inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors"
           >
             {filterOpen ? "🔼 絞り込みを閉じる" : "🔽 条件を絞り込む"}
           </button>
@@ -483,8 +483,8 @@ export default function Home() {
       </section>
 
       {/* ===== フィルターパネル ===== */}
-      {filterOpen && (
-        <div className="max-w-2xl mx-auto px-4 pb-4">
+      <div className={!filterOpen ? "hidden lg:block" : ""}>
+        <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 pb-4">
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
 
             {/* フリーワード */}
@@ -557,11 +557,11 @@ export default function Home() {
             </button>
           </div>
         </div>
-      )}
+      </div>
 
       {/* ===== タブ（sticky） ===== */}
       <div className="sticky top-12 z-20 bg-slate-950/90 backdrop-blur border-b border-slate-800">
-        <div className="max-w-2xl mx-auto px-4 flex">
+        <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 flex">
           {(["events", "recurring"] as const).map((t) => (
             <button
               key={t}
@@ -580,7 +580,7 @@ export default function Home() {
       </div>
 
       {/* ===== メインコンテンツ ===== */}
-      <main className="max-w-2xl mx-auto px-4 py-4">
+      <main className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 py-4">
 
         {/* 件数 + 解除ボタン */}
         {tab === "events" && !loading && (
@@ -611,7 +611,7 @@ export default function Home() {
             ) : filteredEvents.length === 0 ? (
               <p className="text-center text-slate-500 py-20 text-sm">イベント情報がありません</p>
             ) : (
-              <ul className="space-y-2">
+              <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
                 {filteredEvents.slice(0, displayCount).map((event) => (
                   <EventCard key={event.id} event={event} />
                 ))}
@@ -641,7 +641,7 @@ export default function Home() {
             ) : recurringEvents.length === 0 ? (
               <p className="text-center text-slate-500 py-20 text-sm">定期開催イベントがありません</p>
             ) : (
-              <ul className="space-y-2">
+              <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                 {recurringEvents.map((ev) => <RecurringCard key={ev.id} ev={ev} />)}
               </ul>
             )}
@@ -713,7 +713,7 @@ export default function Home() {
       )}
 
       {/* ===== フッター ===== */}
-      <footer className="max-w-2xl mx-auto px-4 py-8 text-center space-y-1">
+      <footer className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 py-8 text-center space-y-1">
         <p className="text-sm font-semibold text-slate-500">2輪4輪 offmap</p>
         <p className="text-xs text-slate-600">© 2026 24offmap.jp · 情報の正確性は保証しません</p>
         <a
