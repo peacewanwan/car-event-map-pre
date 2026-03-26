@@ -11,6 +11,7 @@ type Event = {
   id: number;
   name: string;
   event_date: string;
+  event_date_end: string | null;
   prefecture: string | null;
   venue: string | null;
   genre: string | null;
@@ -80,7 +81,12 @@ function categoryLabel(cat: string | null): string {
 function formatShortDate(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   const days = ["日", "月", "火", "水", "木", "金", "土"];
-  return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]})`;
+  return `${d.getMonth() + 1}/${d.getDate()}（${days[d.getDay()]}）`;
+}
+
+function formatDateRange(startStr: string, endStr: string | null): string {
+  if (!endStr) return formatShortDate(startStr);
+  return `${formatShortDate(startStr)}〜${formatShortDate(endStr)}`;
 }
 
 function daysBadge(dateStr: string): { label: string; classes: string } | null {
@@ -117,7 +123,7 @@ function EventCard({ event }: { event: Event }) {
       <div className="px-4 py-3">
         {/* 日付・バッジ行 */}
         <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
-          <span className="text-sky-400 text-sm font-semibold">{formatShortDate(event.event_date)}</span>
+          <span className="text-sky-400 text-sm font-semibold">{formatDateRange(event.event_date, event.event_date_end)}</span>
           {db && (
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${db.classes}`}>
               {db.label}

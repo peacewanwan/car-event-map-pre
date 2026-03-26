@@ -472,6 +472,192 @@ def fetch_suzuka(url):
         print(f"  [ERROR] 鈴鹿スクレイピング失敗: {url} - {e}")
         return "", []
 
+def generate_keywords(event: dict) -> list | None:
+    """Claude Haiku でイベントのキーワードを生成"""
+    try:
+        text = (
+            f"イベント名：{event.get('name', '')}\n"
+            f"都道府県：{event.get('prefecture', '')}\n"
+            f"会場：{event.get('venue', '')}\n"
+            f"ジャンル：{event.get('genre', '')}"
+        )
+        message = anthropic.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=256,
+            messages=[{
+                "role": "user",
+                "content": (
+                    "以下のイベント情報から、検索に役立つキーワードを5〜8個生成してください。"
+                    "JSON配列のみ返してください。説明不要。\n\n" + text
+                ),
+            }],
+        )
+        raw = message.content[0].text.strip()
+        start = raw.find("[")
+        end = raw.rfind("]") + 1
+        if start != -1 and end > 0:
+            return json.loads(raw[start:end])
+    except Exception as e:
+        print(f"  [WARN] キーワード生成失敗: {e}")
+    return None
+
+
+# ---------------------------------------------------------------
+# イベントマニア
+# ---------------------------------------------------------------
+
+EVENTMANIA_SKIP_GENRES = ["ゴルフ", "花火", "お祭り", "フリーマーケット", "温泉", "キャンプ"]
+
+
+def _parse_eventmania_date(text: str):
+    """「2026/03/21 (土) ～ 2026/03/22 (日)」などを (start_date, end_date) に変換"""
+    parts = re.split(r'[～〜]', text)
+
+    def extract(s):
+        m = re.search(r'(\d{4})/(\d{1,2})/(\d{1,2})', s.strip())
+        if m:
+            return f"{m.group(1)}-{m.group(2).zfill(2)}-{m.group(3).zfill(2)}"
+        return None
+
+    start = extract(parts[0]) if parts else None
+    end = extract(parts[1]) if len(parts) >= 2 else None
+    return start, end
+
+
+def _eventmania_to_category(genre: str | None) -> str:
+    if not genre:
+        return "unknown"
+    if any(k in genre for k in ["クラシックカー", "旧車", "ドレスアップカー", "バイク", "その他車関係イベント"]):
+        return "meeting"
+    if any(k in genre for k in ["カーレース", "その他レース"]):
+        return "track"
+    return "unknown"
+
+
+def crawl_eventmania(site_name: str, site_url: str) -> list:
+    """イベントマニア専用クローラー: 今日〜1年後まで月別ループ"""
+    today = datetime.now()
+    one_year_later = today + timedelta(days=365)
+    today_str = today.strftime("%Y-%m-%d")
+
+    events = []
+    cur = today.replace(day=1)
+
+    while cur <= one_year_later:
+        date_param = cur.strftime("%Y-%m")
+        page_url = f"https://www.mach5.jp/eventmania/areaevent.php?date={date_param}&pref=null"
+
+        try:
+            res = requests.get(page_url, headers=HEADERS, timeout=15)
+            res.raise_for_status()
+            soup = BeautifulSoup(res.content, "html.parser")
+            infoboxes = soup.find_all("div", class_="infobox")
+            print(f"  → {date_param}: {len(infoboxes)}件")
+
+            for box in infoboxes:
+                # カテゴリタグ（1つ目：ジャンル、2つ目：都道府県）
+                cat_div = box.find("div", id="category")
+                tags = cat_div.find_all("p", class_="tag") if cat_div else []
+                genre = tags[0].get_text(strip=True) if len(tags) >= 1 else None
+                pref_tag = tags[1].get_text(strip=True) if len(tags) >= 2 else None
+
+                # 除外ジャンルスキップ
+                all_tag_text = " ".join(t.get_text(strip=True) for t in tags)
+                if any(skip in all_tag_text for skip in EVENTMANIA_SKIP_GENRES):
+                    continue
+
+                # タイトル + source_url
+                title_div = box.find("div", class_="title")
+                name = None
+                event_source_url = page_url
+                if title_div:
+                    a_tag = title_div.find("a")
+                    if a_tag:
+                        name = a_tag.get_text(strip=True)
+                        href = a_tag.get("href", "").strip()
+                        if href and not href.startswith("#"):
+                            if href.startswith("http"):
+                                event_source_url = href
+                            elif href.startswith("/"):
+                                event_source_url = "https://www.mach5.jp" + href
+                            else:
+                                event_source_url = href
+                    else:
+                        name = title_div.get_text(strip=True)
+
+                if not name:
+                    continue
+
+                # 日付
+                date_div = box.find("div", class_="date")
+                start_date = None
+                end_date = None
+                if date_div:
+                    date_p = date_div.find("p")
+                    if date_p:
+                        start_date, end_date = _parse_eventmania_date(date_p.get_text(strip=True))
+
+                if not start_date:
+                    continue
+
+                # 過去イベントスキップ
+                if start_date < today_str:
+                    continue
+
+                # 会場名（fa-building アイコン行）
+                venue = None
+                text_div = box.find("div", class_="text")
+                if text_div:
+                    for elem in text_div.find_all(True):
+                        if elem.find("i", class_=lambda c: c and "fa-building" in c):
+                            a = elem.find("a")
+                            if a:
+                                venue = a.get_text(strip=True)
+                            else:
+                                for icon in elem.find_all("i"):
+                                    icon.decompose()
+                                venue = elem.get_text(strip=True) or None
+                            break
+
+                # 都道府県補完
+                prefecture = pref_tag or guess_prefecture((name or "") + " " + (venue or ""))
+
+                event = {
+                    "name":           name,
+                    "event_date":     start_date,
+                    "event_date_end": end_date,
+                    "prefecture":     prefecture,
+                    "venue":          venue,
+                    "genre":          genre,
+                    "category":       _eventmania_to_category(genre),
+                    "target_vehicle": guess_vehicle(name),
+                    "source_url":     event_source_url,
+                    "source_site":    site_name,
+                    "source_site_url": site_url,
+                }
+                events.append(event)
+                print(f"  ✓ {name} ({start_date})")
+
+            time.sleep(1)
+
+        except Exception as e:
+            print(f"  [ERROR] イベントマニア {date_param}: {e}")
+            time.sleep(1)
+
+        # 翌月へ
+        if cur.month == 12:
+            cur = cur.replace(year=cur.year + 1, month=1)
+        else:
+            cur = cur.replace(month=cur.month + 1)
+
+    # キーワード生成（AI）
+    for event in events:
+        event["keywords"] = generate_keywords(event)
+        time.sleep(0.3)
+
+    return events
+
+
 def fetch_site(url, crawl_type):
     if crawl_type == "dupcar":
         return fetch_dupcar(url)
@@ -545,6 +731,7 @@ def save_events(events):
             new_data = {
                 "name":             event.get("name"),
                 "event_date":       event.get("event_date"),
+                "event_date_end":   event.get("event_date_end"),
                 "prefecture":       event.get("prefecture"),
                 "venue":            event.get("venue"),
                 "genre":            event.get("genre"),
@@ -608,6 +795,11 @@ def main():
         try:
             if crawl_type == "minkara":
                 events = crawl_minkara(site_name, site_url)
+                print(f"  → {len(events)}件のイベントを取得")
+                saved, updated, skipped = save_events(events)
+                print(f"  → 新規: {saved}件 / 更新: {updated}件 / スキップ: {skipped}件\n")
+            elif crawl_type == "eventmania":
+                events = crawl_eventmania(site_name, site_url)
                 print(f"  → {len(events)}件のイベントを取得")
                 saved, updated, skipped = save_events(events)
                 print(f"  → 新規: {saved}件 / 更新: {updated}件 / スキップ: {skipped}件\n")
