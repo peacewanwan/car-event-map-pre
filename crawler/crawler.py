@@ -472,7 +472,7 @@ def fetch_suzuka(url):
         print(f"  [ERROR] 鈴鹿スクレイピング失敗: {url} - {e}")
         return "", []
 
-def generate_keywords(event: dict) -> list | None:
+def generate_keywords(event: dict) -> list:
     """Claude Haiku でイベントのキーワードを生成"""
     try:
         text = (
@@ -524,7 +524,7 @@ def _parse_eventmania_date(text: str):
     return start, end
 
 
-def _eventmania_to_category(genre: str | None) -> str:
+def _eventmania_to_category(genre) -> str:
     if not genre:
         return "unknown"
     if any(k in genre for k in ["クラシックカー", "旧車", "ドレスアップカー", "バイク", "その他車関係イベント"]):
