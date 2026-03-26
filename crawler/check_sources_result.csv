@@ -1,0 +1,38 @@
+site_name,url,status_code,robots_ok,has_event_word,judgment
+ジムニークラブ金沢,http://jimny-kanazawa.com/event.html,ERROR,,,NG
+S2000 Owners Club Japan,http://www.s2oc.com/,ERROR,,,NG
+S2000 Owners Club Japan (別),http://www.s2000.jp/,ERROR,,,NG
+NSX Owners Club Japan,https://www.nsx-ownersclub.jp/,ERROR,,,NG
+Evolution Meeting,http://evo-meeting.com/,ERROR,,,NG
+Porsche Japan イベント,https://www.porsche.com/japan/jp/events/,404,,,NG
+Ferrari Owners Club Japan,https://www.ferrariownersclub.jp/,200,True,True,OK
+ABARTH DAY（公式）,https://www.abarth.jp/event/,403,,,NG
+Abarth Club Japan,https://www.abarthclubjapan.com/,ERROR,,,NG
+Alfa Romeo Day,http://alfaday.com/,200,True,False,WARN
+Fiat Festa,https://fiatfesta.jp/,ERROR,,,NG
+VW Freaks,https://vwfreaks.jp/,ERROR,,,NG
+Audi Team Japan,https://auditeam.jp/,ERROR,,,NG
+Caterham Owners Club Japan,https://caterham.jp/,ERROR,,,NG
+Lotus Owners Club Japan,https://locj.jp/,403,,,NG
+Vespa Club Japan,http://vespaclubjapan.com/,ERROR,,,NG
+Stancenation Japan,https://stancenation-japan.com/,200,True,True,OK
+Lowrider Japan,https://lowrider-japan.com/,ERROR,,,NG
+Harley Owners Group Japan,https://www.hogjapan.com/,TIMEOUT,,,NG
+十国峠カブミーティング,https://10goku-cub.com/,ERROR,,,NG
+カブ千里（公式ブログ）,https://cubsenri.exblog.jp/,404,,,NG
+Cub Meeting,https://cubmeeting.jp/,ERROR,,,NG
+Rebel Owners Meeting,https://rebel-meeting.com/,ERROR,,,NG
+CB Fan Meeting,https://cbfanmeeting.com/,ERROR,,,NG
+HIACE Style Meeting,https://hiace-style.net/,200,True,False,WARN
+ハイエース Style,https://hiace-style.com/,ERROR,,,NG
+Morning Mission,https://morningmission.tokyo/,ERROR,,,NG
+おはよう関西,https://ohakansai.com/,ERROR,,,NG
+Cafe door,http://cafe-door.net/,ERROR,,,NG
+九州カーイベントカレンダー,https://kyushu-car-event.com/,ERROR,,,NG
+Car Event Japan,https://careventjapan.com/,ERROR,,,NG
+Subaru Drive Day,https://www.subarudrive.com/,ERROR,,,NG
+Tipo Weekend Meeting,https://super-battle.com/,ERROR,,,NG
+ジムニークラブ金沢 (再掲),http://jimny-kanazawa.com/event.html,ERROR,,,NG
+おはよう四国,https://minkara.carview.co.jp/group/ohashiku/,404,,,NG
+おはよう岡山（おはきび）,https://minkara.carview.co.jp/group/ohakibi/,404,,,NG
+奥多摩湖BEATミーティング,https://minkara.carview.co.jp/group/km6Mc5C/,200,False,True,WARN
