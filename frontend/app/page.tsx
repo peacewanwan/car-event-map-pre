@@ -65,11 +65,11 @@ const CATEGORY_BAR: Record<string, string> = {
 };
 
 const CATEGORY_BADGE: Record<string, { bg: string; text: string; border: string }> = {
-  meeting: { bg: "bg-purple-500/15", text: "text-purple-300", border: "border-purple-500/30" },
-  track:   { bg: "bg-red-500/15",    text: "text-red-300",    border: "border-red-500/30" },
-  show:    { bg: "bg-yellow-500/15", text: "text-yellow-300", border: "border-yellow-500/30" },
-  touring: { bg: "bg-teal-500/15",   text: "text-teal-300",   border: "border-teal-500/30" },
-  regular: { bg: "bg-slate-500/15",  text: "text-slate-300",  border: "border-slate-500/30" },
+  meeting: { bg: "bg-purple-500/15 lg:bg-purple-500/20", text: "text-purple-300 lg:text-purple-700", border: "border-purple-500/30" },
+  track:   { bg: "bg-red-500/15 lg:bg-red-500/20",       text: "text-red-300 lg:text-red-700",       border: "border-red-500/30" },
+  show:    { bg: "bg-yellow-500/15 lg:bg-yellow-500/20", text: "text-yellow-300 lg:text-yellow-700", border: "border-yellow-500/30" },
+  touring: { bg: "bg-teal-500/15 lg:bg-teal-500/20",     text: "text-teal-300 lg:text-teal-700",     border: "border-teal-500/30" },
+  regular: { bg: "bg-slate-500/15 lg:bg-slate-500/20",   text: "text-slate-300 lg:text-slate-700",   border: "border-slate-500/30" },
 };
 
 // ---------- Helpers ----------
@@ -96,7 +96,7 @@ function daysBadge(dateStr: string): { label: string; classes: string } | null {
   const diff = Math.floor((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   if (diff === 0) return { label: "今日", classes: "bg-orange-500 text-white" };
   if (diff === 1) return { label: "明日", classes: "bg-amber-400 text-amber-950 font-semibold" };
-  if (diff <= 7)  return { label: `あと${diff}日`, classes: "bg-sky-500/20 text-sky-300 border border-sky-500/30" };
+  if (diff <= 7)  return { label: `あと${diff}日`, classes: "bg-sky-500/20 text-sky-300 lg:text-sky-700 border border-sky-500/30" };
   return null;
 }
 
@@ -135,14 +135,14 @@ function EventCard({ event }: { event: Event }) {
             </span>
           )}
           {event.recurring_id && (
-            <span className="text-xs px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/15 text-emerald-300 font-medium">
+            <span className="text-xs px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/15 text-emerald-300 lg:text-emerald-700 font-medium">
               定期開催
             </span>
           )}
         </div>
 
         {/* イベント名 */}
-        <p className="text-white font-bold text-base leading-snug mb-2">{event.name}</p>
+        <p className="text-white lg:text-slate-900 font-bold text-base leading-snug mb-2">{event.name}</p>
 
         {/* 場所・車種 */}
         <div className="space-y-0.5 mb-2 text-sm text-[var(--text-sub)]">
@@ -172,7 +172,7 @@ function EventCard({ event }: { event: Event }) {
               href={event.source_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 text-center text-sm font-medium bg-sky-600/20 text-sky-300 border border-sky-600/30 rounded-lg py-1.5 hover:bg-sky-600/30 transition-colors"
+              className="flex-1 text-center text-sm font-medium bg-sky-600/20 text-sky-300 lg:text-sky-700 border border-sky-600/30 rounded-lg py-1.5 hover:bg-sky-600/30 transition-colors"
             >
               詳細を見る
             </a>
@@ -218,9 +218,9 @@ function RecurringCard({ ev }: { ev: RecurringEvent }) {
   return (
     <li className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-card)] border-l-2 border-l-sky-500 px-4 py-4">
       <div className="flex items-start justify-between gap-2 mb-2">
-        <p className="text-white font-semibold text-sm leading-snug">{ev.name}</p>
+        <p className="text-white lg:text-slate-900 font-semibold text-sm leading-snug">{ev.name}</p>
         {ev.frequency && (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30 font-medium flex-shrink-0">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 lg:text-sky-700 border border-sky-500/30 font-medium flex-shrink-0">
             {formatFrequency(ev.frequency)}
           </span>
         )}
@@ -422,12 +422,12 @@ export default function Home() {
   // ---------- JSX ----------
 
   return (
-    <div className="min-h-screen bg-[var(--bg-page)] text-white">
+    <div className="min-h-screen bg-[var(--bg-page)] text-white lg:text-slate-900">
 
       {/* ===== ヘッダー ===== */}
       <header className="sticky top-0 z-30 bg-[var(--bg-header)]/80 backdrop-blur border-b border-[var(--border-card)]">
         <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <h1 className="text-base font-bold text-white tracking-tight flex-shrink-0">
+          <h1 className="text-base font-bold text-white lg:text-slate-900 tracking-tight flex-shrink-0">
             2輪4輪 offmap
           </h1>
           <div className="flex items-center gap-2">
@@ -493,7 +493,7 @@ export default function Home() {
               value={freeword}
               onChange={(e) => setFreeword(e.target.value)}
               placeholder="キーワードで検索（例：ロードスター、筑波、走行会）"
-              className="w-full text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+              className="w-full text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white lg:text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
             />
 
             {/* 車種・エリア */}
@@ -501,7 +501,7 @@ export default function Home() {
               <select
                 value={vehicle}
                 onChange={(e) => setVehicle(e.target.value)}
-                className="text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                className="text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white lg:text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
               >
                 <option value="">車種：すべて</option>
                 {vehicles.map((v) => <option key={v} value={v}>{v}</option>)}
@@ -509,7 +509,7 @@ export default function Home() {
               <select
                 value={prefecture}
                 onChange={(e) => setPrefecture(e.target.value)}
-                className="text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                className="text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white lg:text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
               >
                 <option value="">エリア：すべて</option>
                 {prefectures.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -524,7 +524,7 @@ export default function Home() {
                   onClick={() => setCategory(opt.value)}
                   className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
                     category === opt.value
-                      ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
+                      ? "bg-sky-500/20 text-sky-300 lg:text-sky-700 border-sky-500/40"
                       : "bg-[var(--bg-input)] text-[var(--text-sub)] border-[var(--border-card)] hover:border-slate-600"
                   }`}
                 >
@@ -539,13 +539,13 @@ export default function Home() {
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                className="text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white lg:text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
               />
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                className="text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-2 text-white lg:text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
               />
             </div>
 
@@ -567,7 +567,7 @@ export default function Home() {
               key={t}
               onClick={() => setTab(t)}
               className={`flex-1 py-3 text-sm font-medium relative transition-colors ${
-                tab === t ? "text-[var(--accent)]" : "text-slate-500 hover:text-slate-300"
+                tab === t ? "text-[var(--accent)]" : "text-slate-500 hover:text-slate-300 lg:hover:text-slate-700"
               }`}
             >
               {t === "events" ? "イベント一覧" : "定期開催"}
@@ -661,7 +661,7 @@ export default function Home() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-white">イベントを投稿する</h2>
+              <h2 className="text-base font-semibold text-white lg:text-slate-900">イベントを投稿する</h2>
               <button
                 onClick={() => { setModalOpen(false); setSubmitText(""); setSubmitResult(""); }}
                 className="text-slate-400 hover:text-white text-xl leading-none transition-colors"
@@ -683,7 +683,7 @@ export default function Home() {
                   onChange={(e) => setSubmitText(e.target.value)}
                   rows={6}
                   placeholder={`例）\n【ロードスターミーティング】\n日時：4月20日（日）10:00〜\n場所：道の駅 富士川楽座（静岡県富士市）\n対象：ロードスター全型式\n参加費：無料・事前申込不要`}
-                  className="w-full text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40 resize-none"
+                  className="w-full text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-xl px-3 py-2 text-white lg:text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40 resize-none"
                 />
                 {submitResult === "error" && (
                   <p className="text-sm text-red-400">{submitError}</p>
