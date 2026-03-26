@@ -19,6 +19,8 @@
 @media (min-width: 1024px) {
   :root {
     /* テーマカラー（デスクトップ：ミッドトーンライト） */
+    --background: #334155;  /* slate-700 */
+    --foreground: #ffffff;
     --bg-page:    #334155;  /* slate-700 */
     --bg-card:    #475569;  /* slate-600 */
     --bg-filter:  #475569;  /* slate-600 */
@@ -28,6 +30,12 @@
     --text-main:  #ffffff;  /* white     */
     --text-sub:   #e2e8f0;  /* slate-200 */
     --accent:     #7dd3fc;  /* sky-300   */
+  }
+
+  /* body を直接上書き（cascade 順序問題の保険） */
+  body {
+    background: #334155;
+    color: #ffffff;
   }
 }
 
