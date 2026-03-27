@@ -433,13 +433,13 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <Link
               href="/spots"
-              className="text-sm font-medium px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 hover:bg-emerald-600/30 transition-colors flex-shrink-0"
+              className="text-sm font-medium px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 hover:bg-emerald-600/30 lg:bg-emerald-50 lg:text-emerald-700 lg:border-emerald-200 lg:hover:bg-emerald-100 transition-colors flex-shrink-0"
             >
               オフ会メーカー
             </Link>
             <button
               onClick={() => { setModalOpen(true); setSubmitResult(""); setSubmitError(""); }}
-              className="text-sm font-medium px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500 hover:bg-emerald-500/10 transition-colors flex-shrink-0"
+              className="text-sm font-medium px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500 hover:bg-emerald-500/10 lg:bg-emerald-50 lg:text-emerald-700 lg:border-emerald-200 lg:hover:bg-emerald-100 transition-colors flex-shrink-0"
             >
               イベント投稿
             </button>
