@@ -297,8 +297,8 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
         isHighlighted
           ? 'ring-1 ring-emerald-400/60 bg-emerald-950/20 border border-emerald-500/40'
           : hasNow
-            ? 'bg-slate-900/80 border border-l-2 border-emerald-500/40 border-l-emerald-500'
-            : 'bg-slate-900/80 border border-slate-800 hover:border-slate-600',
+            ? 'bg-[var(--bg-card)] border border-l-2 border-emerald-500/40 border-l-emerald-500'
+            : 'bg-[var(--bg-card)] border border-[var(--border-card)] hover:border-slate-500',
       ].join(' ')}
     >
       {/* ハイライトヒント */}
@@ -315,12 +315,12 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
       >
         {/* 1行目：スポット名 + 都道府県 + ナビ */}
         <div className="flex items-start justify-between gap-2 mb-1">
-          <p className="font-semibold text-white text-sm leading-snug">
+          <p className="font-semibold text-[var(--text-main)] text-sm leading-snug">
             {spot.name}
           </p>
           <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
             {spot.prefecture && (
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-[var(--text-sub)]">
                 {spot.prefecture}
               </span>
             )}
@@ -329,7 +329,7 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="text-slate-400 hover:text-emerald-400 transition-colors"
+              className="text-[var(--text-sub)] hover:text-emerald-400 transition-colors"
               title="Googleマップで開く"
             >
               <Navigation2 size={14} />
@@ -348,43 +348,43 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
 
         {/* 3行目：カウント */}
         <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-400 flex items-center gap-1.5">
+          <span className="text-xs text-[var(--text-sub)] flex items-center gap-1.5">
             🔴 今{nowCount}人
             {hasNow && (
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             )}
           </span>
-          <span className="text-xs text-slate-500">📅 今月{planCount}人</span>
+          <span className="text-xs text-[var(--text-sub)]">📅 今月{planCount}人</span>
         </div>
       </div>
 
       {/* ===== アコーディオン展開エリア ===== */}
       {isOpen && (
-        <div className="border-t border-slate-800 px-4 py-4 space-y-4">
+        <div className="border-t border-[var(--border-card)] bg-[var(--bg-filter)] px-4 py-4 space-y-4">
 
           {/* 今いるナウセクション */}
           <section>
-            <p className="text-xs text-slate-500 font-medium tracking-wider mb-3">
+            <p className="text-xs text-[var(--text-sub)] font-medium tracking-wider mb-3">
               今いるナウ
             </p>
 
             {/* チェックイン中ユーザー一覧 */}
             {loadingCheckins ? (
               <div className="flex justify-center py-4">
-                <div className="w-4 h-4 border-2 border-slate-700 border-t-emerald-400 rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-[var(--border-card)] border-t-emerald-400 rounded-full animate-spin" />
               </div>
             ) : checkins.length === 0 ? (
-              <p className="text-xs text-slate-600 mb-4">まだ誰もいません</p>
+              <p className="text-xs text-[var(--text-sub)] mb-4">まだ誰もいません</p>
             ) : (
               <ul className="space-y-1 mb-4">
                 {checkins.map((c) => (
                   <li key={c.id} className="flex items-start gap-3 py-2">
-                    <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 shrink-0 text-sm">
+                    <div className="w-8 h-8 rounded-full bg-[var(--bg-input)] flex items-center justify-center text-[var(--text-sub)] shrink-0 text-sm">
                       👤
                     </div>
                     <div>
-                      <p className="text-sm text-slate-200 font-medium">{c.nickname}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-sm text-[var(--text-main)] font-medium">{c.nickname}</p>
+                      <p className="text-xs text-[var(--text-sub)]">
                         {c.vehicle_type && <span>{c.vehicle_type}　</span>}
                         {formatCheckinTime(c.created_at)} チェックイン（{remainingTime(c.expires_at)}）
                       </p>
@@ -394,11 +394,11 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
               </ul>
             )}
 
-            <div className="border-t border-slate-800 pt-4 space-y-3">
+            <div className="border-t border-[var(--border-card)] pt-4 space-y-3">
               {alreadyCheckedIn ? (
                 <button
                   onClick={handleCheckout}
-                  className="w-full py-3 rounded-xl border border-slate-700 text-slate-400 text-sm hover:bg-slate-800 transition-colors"
+                  className="w-full py-3 rounded-xl border border-[var(--border-card)] text-[var(--text-sub)] text-sm hover:bg-[var(--bg-input)] transition-colors"
                 >
                   退出する
                 </button>
@@ -410,14 +410,14 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
                       value={nickname}
                       onChange={(e) => setNickname(e.target.value)}
                       placeholder="ニックネーム"
-                      className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full px-3 py-2.5 bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg text-sm text-[var(--text-main)] placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
                     />
                     <input
                       type="text"
                       value={vehicleType}
                       onChange={(e) => setVehicleType(e.target.value)}
                       placeholder="車種（任意）"
-                      className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full px-3 py-2.5 bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg text-sm text-[var(--text-main)] placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
                     />
                   </div>
                   <button
@@ -433,8 +433,8 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
           </section>
 
           {/* ===== 行く予定セクション ===== */}
-          <section className="border-t border-slate-800 pt-4">
-            <p className="text-xs text-slate-500 font-medium tracking-wider mb-3">
+          <section className="border-t border-[var(--border-card)] pt-4">
+            <p className="text-xs text-[var(--text-sub)] font-medium tracking-wider mb-3">
               行く予定
             </p>
 
@@ -450,7 +450,7 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
                 const firstDow = days[0].getDay()
                 return (
                   <div key={`${year}-${month}`} className="mb-4">
-                    <p className="text-xs text-slate-400 font-medium mb-2">
+                    <p className="text-xs text-[var(--text-sub)] font-medium mb-2">
                       {month + 1}月
                     </p>
                     <div className="grid grid-cols-7 text-center">
@@ -497,17 +497,17 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
             {/* 選択日の予定者 */}
             {selectedDate && (
               <div className="mt-3 space-y-2">
-                <p className="text-xs text-slate-500">{formatSelectedDate(selectedDate)} の予定</p>
+                <p className="text-xs text-[var(--text-sub)]">{formatSelectedDate(selectedDate)} の予定</p>
                 {planCheckins
                   .filter((c) => c.planned_at.startsWith(selectedDate))
                   .map((c) => (
                     <div key={c.id} className="flex items-center gap-2 py-1">
-                      <span className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 text-xs shrink-0">
+                      <span className="w-6 h-6 rounded-full bg-[var(--bg-input)] flex items-center justify-center text-[var(--text-sub)] text-xs shrink-0">
                         📅
                       </span>
                       <div>
-                        <p className="text-sm text-slate-200">{c.nickname}</p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-sm text-[var(--text-main)]">{c.nickname}</p>
+                        <p className="text-xs text-[var(--text-sub)]">
                           {c.vehicle_type && `${c.vehicle_type} · `}
                           {c.time_slot ? TIME_SLOT_LABEL[c.time_slot] : ''}
                         </p>
@@ -515,17 +515,17 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
                     </div>
                   ))}
                 {planCheckins.filter((c) => c.planned_at.startsWith(selectedDate)).length === 0 && (
-                  <p className="text-xs text-slate-600 py-2">この日の予定はまだありません</p>
+                  <p className="text-xs text-[var(--text-sub)] py-2">この日の予定はまだありません</p>
                 )}
               </div>
             )}
 
             {/* 行く予定フォーム */}
-            <div className="border-t border-slate-800 mt-4 pt-4 space-y-3">
+            <div className="border-t border-[var(--border-card)] mt-4 pt-4 space-y-3">
               {alreadyPlanned ? (
                 <button
                   onClick={handleCancelPlan}
-                  className="w-full py-3 rounded-xl border border-slate-700 text-slate-400 text-sm hover:bg-slate-800 transition-colors"
+                  className="w-full py-3 rounded-xl border border-[var(--border-card)] text-[var(--text-sub)] text-sm hover:bg-[var(--bg-input)] transition-colors"
                 >
                   予定をキャンセル
                 </button>
@@ -537,27 +537,27 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
                       value={planNickname}
                       onChange={(e) => setPlanNickname(e.target.value)}
                       placeholder="ニックネーム"
-                      className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full px-3 py-2.5 bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg text-sm text-[var(--text-main)] placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
                     />
                     <input
                       type="text"
                       value={planVehicle}
                       onChange={(e) => setPlanVehicle(e.target.value)}
                       placeholder="車種（任意）"
-                      className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full px-3 py-2.5 bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg text-sm text-[var(--text-main)] placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
                     />
                   </div>
                   <div className="relative w-44">
                     <Calendar
                       size={15}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-sub)] pointer-events-none"
                     />
                     <input
                       type="date"
                       value={planDate}
                       onChange={(e) => setPlanDate(e.target.value)}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg pl-8 pr-3 py-2 focus:border-emerald-500 focus:outline-none [color-scheme:dark]"
+                      className="w-full bg-[var(--bg-input)] border border-[var(--border-card)] text-[var(--text-main)] text-sm rounded-lg pl-8 pr-3 py-2 focus:border-emerald-500 focus:outline-none [color-scheme:dark]"
                     />
                   </div>
                   <div className="grid grid-cols-4 gap-1">
@@ -570,7 +570,7 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
                           'flex flex-col items-center py-2 rounded-lg border text-base transition-colors',
                           selectedTimeSlot === slot
                             ? 'border-emerald-500 bg-emerald-950/30 text-emerald-400'
-                            : 'border-slate-700 text-slate-400 hover:border-slate-600',
+                            : 'border-[var(--border-card)] text-[var(--text-sub)] hover:border-slate-500',
                         ].join(' ')}
                       >
                         {TIME_SLOT_EMOJI[slot]}
