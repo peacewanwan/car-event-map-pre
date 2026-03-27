@@ -194,7 +194,7 @@ export default function SpotsPage() {
   // ---------- JSX ----------
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-main)]">
 
       {/* ===== 使い方モーダル ===== */}
       {howToOpen && (
@@ -203,37 +203,37 @@ export default function SpotsPage() {
           onClick={() => setHowToOpen(false)}
         >
           <div
-            className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm space-y-4"
+            className="bg-[var(--bg-card)] border border-[var(--border-card)] rounded-2xl p-6 w-full max-w-sm space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-base font-bold text-emerald-400">オフ会メーカーとは？</h2>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-[var(--text-sub)]">
               今いる場所・行く予定を共有して<br />
               仲間を増やすためのページです。
             </p>
             <div className="space-y-3">
               <div>
-                <p className="text-sm font-semibold text-white">🔴 今いるナウ</p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-sm font-semibold text-[var(--text-main)]">🔴 今いるナウ</p>
+                <p className="text-xs text-[var(--text-sub)] mt-1">
                   今その駐車場・スポットにいる人を表示<br />
                   「ここにいるナウ」で自分も登録できる
                 </p>
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">📅 行く予定</p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-sm font-semibold text-[var(--text-main)]">📅 行く予定</p>
+                <p className="text-xs text-[var(--text-sub)] mt-1">
                   カレンダーで予定日をタップすると<br />
                   その日に行く予定の人が見られる
                 </p>
               </div>
-              <div className="border-t border-slate-800 pt-3 space-y-1">
+              <div className="border-t border-[var(--border-card)] pt-3 space-y-1">
                 <p className="text-xs text-slate-500">✓ ニックネームのみ・登録不要</p>
                 <p className="text-xs text-slate-500">✓ 3時間で自動チェックアウト</p>
               </div>
             </div>
             <button
               onClick={() => setHowToOpen(false)}
-              className="w-full text-sm bg-slate-800 text-slate-300 rounded-xl py-2.5 hover:bg-slate-700 transition-colors"
+              className="w-full text-sm bg-[var(--bg-input)] text-[var(--text-sub)] rounded-xl py-2.5 hover:opacity-80 transition-colors border border-[var(--border-card)]"
             >
               閉じる
             </button>
@@ -242,10 +242,10 @@ export default function SpotsPage() {
       )}
 
       {/* ===== ヘッダー（sticky） ===== */}
-      <header className="sticky top-0 z-30 bg-slate-950/90 backdrop-blur border-b border-slate-800">
+      <header className="sticky top-0 z-30 bg-[var(--bg-header)]/90 backdrop-blur border-b border-[var(--border-card)]">
         <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 py-3 grid grid-cols-3 items-center">
           <Link href="/" className="flex items-baseline gap-0.5 hover:opacity-80 transition-opacity">
-            <span className="text-xs font-bold text-white">2輪4輪</span>
+            <span className="text-xs font-bold text-[var(--text-main)]">2輪4輪</span>
             <span className="text-xs font-bold text-sky-400">offmap</span>
           </Link>
           <p className="text-center text-sm font-bold text-emerald-400">
@@ -258,7 +258,7 @@ export default function SpotsPage() {
             >
               使い方
             </button>
-            <a href="/faq" className="text-slate-400 hover:text-slate-200 transition-colors" title="よくある質問">
+            <a href="/faq" className="text-[var(--text-sub)] hover:text-[var(--text-main)] transition-colors" title="よくある質問">
               <HelpCircle size={18} />
             </a>
           </div>
@@ -300,7 +300,7 @@ export default function SpotsPage() {
       <div className="lg:flex lg:h-[calc(100vh-57px)]">
 
         {/* ── 左カラム: リスト ── */}
-        <div className={`lg:w-2/5 lg:h-full lg:overflow-y-auto lg:border-r lg:border-slate-800 ${activeTab !== 'list' ? 'hidden lg:block' : ''}`}>
+        <div className={`lg:w-2/5 lg:h-full lg:overflow-y-auto lg:border-r lg:border-[var(--border-card)] ${activeTab !== 'list' ? 'hidden lg:block' : ''}`}>
           <div className="max-w-2xl mx-auto lg:max-w-none">
 
             {/* フィルタ */}
@@ -309,7 +309,7 @@ export default function SpotsPage() {
                 <select
                   value={prefFilter}
                   onChange={(e) => setPrefFilter(e.target.value)}
-                  className="text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-1.5 text-[var(--text-main)] focus:outline-none focus:border-emerald-500 transition-colors"
                 >
                   <option value="">都道府県：すべて</option>
                   {prefectures.map((p) => (
@@ -321,7 +321,7 @@ export default function SpotsPage() {
                   value={nameFilter}
                   onChange={(e) => setNameFilter(e.target.value)}
                   placeholder="スポット名 / ハンドル名 / 車種"
-                  className="flex-1 text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="flex-1 text-sm bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg px-3 py-1.5 text-[var(--text-main)] placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -330,7 +330,7 @@ export default function SpotsPage() {
                   className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
                     nowOnly
                       ? 'bg-emerald-600/20 text-emerald-400 border-emerald-600/40'
-                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
+                      : 'bg-[var(--bg-input)] text-[var(--text-sub)] border-[var(--border-card)] hover:border-slate-500'
                   }`}
                 >
                   🔴 今いる人あり
@@ -340,7 +340,7 @@ export default function SpotsPage() {
                   className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
                     planOnly
                       ? 'bg-emerald-600/20 text-emerald-400 border-emerald-600/40'
-                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
+                      : 'bg-[var(--bg-input)] text-[var(--text-sub)] border-[var(--border-card)] hover:border-slate-500'
                   }`}
                 >
                   📅 行く予定の人あり
@@ -355,7 +355,7 @@ export default function SpotsPage() {
             <div className="px-4 py-4 space-y-3">
               {loading ? (
                 <div className="flex justify-center py-16">
-                  <div className="w-5 h-5 border-2 border-slate-700 border-t-emerald-400 rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-[var(--border-card)] border-t-emerald-400 rounded-full animate-spin" />
                 </div>
               ) : filteredSpots.length === 0 ? (
                 <p className="text-center text-slate-500 py-16 text-sm">
