@@ -37,6 +37,9 @@ export default function SpotsPage() {
   const [howToOpen, setHowToOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'list' | 'map'>('list')
 
+  // ---- リスト→地図連携 ----
+  const [selectedSpotId, setSelectedSpotId] = useState<number | null>(null)
+
   // ---- filter state ----
   const [prefFilter, setPrefFilter] = useState('')
   const [nameFilter, setNameFilter] = useState('')
@@ -240,7 +243,7 @@ export default function SpotsPage() {
 
       {/* ===== ヘッダー（sticky） ===== */}
       <header className="sticky top-0 z-30 bg-slate-950/90 backdrop-blur border-b border-slate-800">
-        <div className="max-w-2xl mx-auto px-4 py-3 grid grid-cols-3 items-center">
+        <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 py-3 grid grid-cols-3 items-center">
           <Link href="/" className="flex items-baseline gap-0.5 hover:opacity-80 transition-opacity">
             <span className="text-xs font-bold text-white">2輪4輪</span>
             <span className="text-xs font-bold text-sky-400">offmap</span>
@@ -262,8 +265,8 @@ export default function SpotsPage() {
         </div>
       </header>
 
-      {/* ===== サブテキスト ===== */}
-      <div className="bg-gradient-to-b from-emerald-950/20 to-transparent px-4 py-6 text-center">
+      {/* ===== サブテキスト（モバイルのみ） ===== */}
+      <div className="lg:hidden bg-gradient-to-b from-emerald-950/20 to-transparent px-4 py-6 text-center">
         <p className="text-sm text-slate-400 leading-relaxed">
           今日はどこ行く？<br />
           誰かに会いに行く？誰かが来てくれるのを待つ？<br />
@@ -271,8 +274,8 @@ export default function SpotsPage() {
         </p>
       </div>
 
-      {/* ===== タブ（sticky） ===== */}
-      <div className="sticky top-[57px] z-20 bg-slate-950/95 backdrop-blur border-b border-slate-800">
+      {/* ===== タブ（モバイルのみ・sticky） ===== */}
+      <div className="sticky top-[57px] z-20 bg-slate-950/95 backdrop-blur border-b border-slate-800 lg:hidden">
         <div className="max-w-2xl mx-auto px-4 flex">
           {(['list', 'map'] as const).map((t) => (
             <button
@@ -293,93 +296,100 @@ export default function SpotsPage() {
         </div>
       </div>
 
-      {/* ===== リストタブ ===== */}
-      {activeTab === 'list' && (
-        <div className="max-w-2xl mx-auto">
+      {/* ===== メインコンテンツ（lg: 2カラム） ===== */}
+      <div className="lg:flex lg:h-[calc(100vh-57px)]">
 
-          {/* フィルタ */}
-          <div className="px-4 pt-3 pb-2 space-y-2">
-            <div className="flex gap-2">
-              <select
-                value={prefFilter}
-                onChange={(e) => setPrefFilter(e.target.value)}
-                className="text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-emerald-500 transition-colors"
-              >
-                <option value="">都道府県：すべて</option>
-                {prefectures.map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-              <input
-                type="text"
-                value={nameFilter}
-                onChange={(e) => setNameFilter(e.target.value)}
-                placeholder="スポット名 / ハンドル名 / 車種"
-                className="flex-1 text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
-              />
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={() => setNowOnly((v) => !v)}
-                className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
-                  nowOnly
-                    ? 'bg-emerald-600/20 text-emerald-400 border-emerald-600/40'
-                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
-                }`}
-              >
-                🔴 今いる人あり
-              </button>
-              <button
-                onClick={() => setPlanOnly((v) => !v)}
-                className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
-                  planOnly
-                    ? 'bg-emerald-600/20 text-emerald-400 border-emerald-600/40'
-                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
-                }`}
-              >
-                📅 行く予定の人あり
-              </button>
-              <p className="text-xs text-slate-600">
-                {loading ? '読込中...' : `${filteredSpots.length}件`}
-              </p>
-            </div>
-          </div>
+        {/* ── 左カラム: リスト ── */}
+        <div className={`lg:w-2/5 lg:h-full lg:overflow-y-auto lg:border-r lg:border-slate-800 ${activeTab !== 'list' ? 'hidden lg:block' : ''}`}>
+          <div className="max-w-2xl mx-auto lg:max-w-none">
 
-          {/* スポット一覧 */}
-          <div className="px-4 py-4 space-y-3">
-            {loading ? (
-              <div className="flex justify-center py-16">
-                <div className="w-5 h-5 border-2 border-slate-700 border-t-emerald-400 rounded-full animate-spin" />
-              </div>
-            ) : filteredSpots.length === 0 ? (
-              <p className="text-center text-slate-500 py-16 text-sm">
-                スポットが見つかりません
-              </p>
-            ) : (
-              filteredSpots.map((spot) => (
-                <SpotCard
-                  key={spot.id}
-                  spot={spot}
-                  nowCount={nowCountMap[spot.id] || 0}
-                  planCount={planCountMap[spot.id] || 0}
-                  isOpen={openSpotId === spot.id}
-                  onToggle={() => setOpenSpotId(openSpotId === spot.id ? null : spot.id)}
-                  isHighlighted={highlightedSpotIds.has(spot.id)}
-                  highlightHint={highlightHintMap[spot.id]}
+            {/* フィルタ */}
+            <div className="px-4 pt-3 pb-2 space-y-2">
+              <div className="flex gap-2">
+                <select
+                  value={prefFilter}
+                  onChange={(e) => setPrefFilter(e.target.value)}
+                  className="text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                >
+                  <option value="">都道府県：すべて</option>
+                  {prefectures.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={nameFilter}
+                  onChange={(e) => setNameFilter(e.target.value)}
+                  placeholder="スポット名 / ハンドル名 / 車種"
+                  className="flex-1 text-sm bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
                 />
-              ))
-            )}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => setNowOnly((v) => !v)}
+                  className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
+                    nowOnly
+                      ? 'bg-emerald-600/20 text-emerald-400 border-emerald-600/40'
+                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
+                  }`}
+                >
+                  🔴 今いる人あり
+                </button>
+                <button
+                  onClick={() => setPlanOnly((v) => !v)}
+                  className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
+                    planOnly
+                      ? 'bg-emerald-600/20 text-emerald-400 border-emerald-600/40'
+                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
+                  }`}
+                >
+                  📅 行く予定の人あり
+                </button>
+                <p className="text-xs text-slate-600">
+                  {loading ? '読込中...' : `${filteredSpots.length}件`}
+                </p>
+              </div>
+            </div>
+
+            {/* スポット一覧 */}
+            <div className="px-4 py-4 space-y-3">
+              {loading ? (
+                <div className="flex justify-center py-16">
+                  <div className="w-5 h-5 border-2 border-slate-700 border-t-emerald-400 rounded-full animate-spin" />
+                </div>
+              ) : filteredSpots.length === 0 ? (
+                <p className="text-center text-slate-500 py-16 text-sm">
+                  スポットが見つかりません
+                </p>
+              ) : (
+                filteredSpots.map((spot) => (
+                  <SpotCard
+                    key={spot.id}
+                    spot={spot}
+                    nowCount={nowCountMap[spot.id] || 0}
+                    planCount={planCountMap[spot.id] || 0}
+                    isOpen={openSpotId === spot.id}
+                    onToggle={() => {
+                      const newId = openSpotId === spot.id ? null : spot.id
+                      setOpenSpotId(newId)
+                      if (newId !== null) setSelectedSpotId(newId)
+                    }}
+                    isHighlighted={highlightedSpotIds.has(spot.id)}
+                    highlightHint={highlightHintMap[spot.id]}
+                  />
+                ))
+              )}
+            </div>
           </div>
         </div>
-      )}
 
-      {/* ===== 地図タブ ===== */}
-      {activeTab === 'map' && (
-        <div className="h-[calc(100vh-120px)]">
+        {/* ── 右カラム: 地図 ── */}
+        <div className={`lg:flex-1 lg:h-full ${activeTab !== 'map' ? 'hidden lg:block' : 'h-[calc(100vh-120px)]'}`}>
           <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''}>
             <MapView
               spots={spots}
               nowCountMap={nowCountMap}
+              focusSpotId={selectedSpotId ?? undefined}
               onSpotSelect={(spotId) => {
                 setActiveTab('list')
                 setOpenSpotId(spotId)
@@ -387,8 +397,8 @@ export default function SpotsPage() {
             />
           </APIProvider>
         </div>
-      )}
 
+      </div>
     </div>
   )
 }

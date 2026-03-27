@@ -22,6 +22,7 @@ type Props = {
   spots: Spot[]
   nowCountMap: Record<number, number>
   onSpotSelect?: (spotId: number) => void
+  focusSpotId?: number
 }
 
 const PREF_LOCATIONS: Record<string, { lat: number; lng: number; zoom: number }> = {
@@ -323,7 +324,7 @@ type PopupTab = 'now' | 'plan'
 
 // ---------- MapView ----------
 
-export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
+export default function MapView({ spots, nowCountMap, onSpotSelect, focusSpotId }: Props) {
   const [activeSpot, setActiveSpot] = useState<Spot | null>(null)
   const [activeTab, setActiveTab] = useState<PopupTab>('now')
   const [prefFilter, setPrefFilter] = useState('')
@@ -333,6 +334,17 @@ export default function MapView({ spots, nowCountMap, onSpotSelect }: Props) {
   const handleZoomChange = useCallback((zoom: number) => {
     setZoomLevel(zoom)
   }, [])
+
+  // リスト→地図連携: focusSpotId変化時にpanTo＋ポップアップ表示
+  useEffect(() => {
+    if (!focusSpotId || !mapInstance) return
+    const spot = spots.find((s) => s.id === focusSpotId)
+    if (!spot) return
+    mapInstance.panTo({ lat: spot.lat, lng: spot.lng })
+    mapInstance.setZoom(14)
+    setActiveSpot(spot)
+    setActiveTab('now')
+  }, [focusSpotId, mapInstance, spots])
 
   const prefOptions = Array.from(
     new Set(spots.map((s) => s.prefecture).filter(Boolean) as string[])
