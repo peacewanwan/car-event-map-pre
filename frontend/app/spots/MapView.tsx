@@ -5,8 +5,6 @@ import { Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps'
 import { createClient } from '@/lib/supabase/client'
 import { LocateFixed, Calendar } from 'lucide-react'
 
-const supabase = createClient()
-
 export type Spot = {
   id: number
   name: string
@@ -85,6 +83,7 @@ function RedPin({ count }: { count: number }) {
 // ---------- Now チェックインセクション ----------
 
 function PopupCheckinSection({ spot }: { spot: Spot }) {
+  const supabase = createClient()
   const storageKey = `checkin_${spot.id}`
   const [alreadyCheckedIn, setAlreadyCheckedIn] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -175,6 +174,7 @@ function PopupCheckinSection({ spot }: { spot: Spot }) {
 // ---------- 行く予定セクション ----------
 
 function PopupPlanSection({ spot }: { spot: Spot }) {
+  const supabase = createClient()
   const planStorageKey = `plan_${spot.id}`
   const [alreadyPlanned, setAlreadyPlanned] = useState(() => {
     if (typeof window === 'undefined') return false
