@@ -716,12 +716,20 @@ export default function Home() {
       <footer className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 py-8 text-center space-y-1">
         <p className="text-sm font-semibold text-slate-500">2輪4輪 offmap</p>
         <p className="text-xs text-slate-600">© 2026 24offmap.jp · 情報の正確性は保証しません</p>
-        <a
-          href="#"
-          className="text-xs text-slate-600 hover:text-slate-400 underline underline-offset-2 transition-colors"
-        >
-          掲載削除・修正依頼
-        </a>
+        <div className="flex justify-center gap-4">
+          <a
+            href="/contact"
+            className="text-xs text-slate-600 hover:text-slate-400 underline underline-offset-2 transition-colors"
+          >
+            掲載削除・修正依頼
+          </a>
+          <a
+            href="/contact"
+            className="text-xs text-slate-600 hover:text-slate-400 underline underline-offset-2 transition-colors"
+          >
+            お問い合わせ
+          </a>
+        </div>
       </footer>
 
     </div>
