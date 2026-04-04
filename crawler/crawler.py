@@ -677,7 +677,7 @@ def fetch_site(url, crawl_type):
 def normalize(text, site_name, site_url, prefetched_events=None):
     try:
         message = anthropic.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-haiku-4-5-20251001",
             max_tokens=4096,
             messages=[{"role": "user", "content": NORMALIZE_PROMPT.format(text=text)}]
         )
