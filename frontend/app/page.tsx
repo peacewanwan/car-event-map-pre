@@ -285,6 +285,10 @@ export default function Home() {
   const [submitResult, setSubmitResult] = useState<"" | "success" | "error">("");
   const [submitError, setSubmitError]   = useState("");
 
+  // エントリモーダル
+  const [entryModalOpen, setEntryModalOpen] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
+
   // useRef（将来用 / ログタイマー）
   const logTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -470,6 +474,12 @@ export default function Home() {
           </div>
 
           <button
+            onClick={() => setEntryModalOpen(true)}
+            className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 hover:bg-emerald-600/30 transition-colors"
+          >
+            今いる場所を共有する →
+          </button>
+          <button
             onClick={() => setFilterOpen((v) => !v)}
             className="lg:hidden inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-[var(--bg-input)] text-[var(--text-main)] border border-[var(--border-card)] hover:bg-[var(--bg-card)] transition-colors"
           >
@@ -649,6 +659,72 @@ export default function Home() {
         )}
 
       </main>
+
+      {/* ===== エントリモーダル ===== */}
+      {entryModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60"
+          onClick={() => { setEntryModalOpen(false); setGeoLoading(false); }}
+        >
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-[var(--bg-card)] border-t border-[var(--border-card)] rounded-t-2xl p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-white lg:text-slate-900">どこから探す？</h2>
+              <button
+                onClick={() => { setEntryModalOpen(false); setGeoLoading(false); }}
+                className="text-slate-400 hover:text-white text-xl leading-none transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                if (!navigator.geolocation) {
+                  window.location.href = '/spots';
+                  return;
+                }
+                setGeoLoading(true);
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => {
+                    setGeoLoading(false);
+                    window.location.href = `/spots?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`;
+                  },
+                  () => {
+                    setGeoLoading(false);
+                    window.location.href = '/spots';
+                  }
+                );
+              }}
+              disabled={geoLoading}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-400 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            >
+              {geoLoading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  取得中...
+                </>
+              ) : '📍 現在地周辺のスポットを見る'}
+            </button>
+
+            <button
+              onClick={() => { window.location.href = '/spots'; }}
+              className="w-full py-3 rounded-xl border border-[var(--border-card)] text-[var(--text-main)] text-sm hover:bg-[var(--bg-input)] transition-colors"
+            >
+              🗾 全国のスポットを見る
+            </button>
+
+            <button
+              onClick={() => { setEntryModalOpen(false); setGeoLoading(false); }}
+              className="w-full text-sm text-[var(--text-sub)] py-2 hover:text-[var(--text-main)] transition-colors"
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ===== 投稿モーダル（ボトムシート） ===== */}
       {modalOpen && (

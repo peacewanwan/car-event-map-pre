@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { APIProvider } from '@vis.gl/react-google-maps'
 import Link from 'next/link'
@@ -21,9 +22,26 @@ type Spot = {
   region: string | null
 }
 
+// ---------- Helpers ----------
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
 // ---------- SpotsPage ----------
 
-export default function SpotsPage() {
+function SpotsPageInner() {
+  const searchParams = useSearchParams()
+  const initLat = searchParams.get('lat')
+  const initLng = searchParams.get('lng')
+
   // ---- data ----
   const [spots, setSpots] = useState<Spot[]>([])
   const [nowCountMap, setNowCountMap] = useState<Record<number, number>>({})
@@ -162,6 +180,10 @@ export default function SpotsPage() {
   ).sort()
 
   const filteredSpots = spots.filter((s) => {
+    if (initLat && initLng) {
+      const dist = haversineKm(parseFloat(initLat), parseFloat(initLng), s.lat, s.lng)
+      if (dist > 50) return false
+    }
     if (prefFilter && s.prefecture !== prefFilter) return false
     if (nowOnly && (nowCountMap[s.id] || 0) === 0) return false
     if (planOnly && (planCountMap[s.id] || 0) === 0) return false
@@ -243,14 +265,11 @@ export default function SpotsPage() {
 
       {/* ===== ヘッダー（sticky） ===== */}
       <header className="sticky top-0 z-30 bg-[var(--bg-header)]/90 backdrop-blur border-b border-[var(--border-card)]">
-        <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 py-3 grid grid-cols-3 items-center">
+        <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 py-3 flex justify-between items-center">
           <Link href="/" className="flex items-baseline gap-0.5 hover:opacity-80 transition-opacity">
-            <span className="text-xs font-bold text-[var(--text-main)]">2輪4輪</span>
-            <span className="text-xs font-bold text-sky-400">offmap</span>
+            <span className="text-xs font-bold text-[var(--text-sub)]">2輪4輪</span>
+            <span className="text-sm font-black text-emerald-400">オフ会メーカー</span>
           </Link>
-          <p className="text-center text-sm font-bold text-emerald-400">
-            オフ会メーカー
-          </p>
           <div className="flex justify-end items-center gap-3">
             <button
               onClick={() => setHowToOpen(true)}
@@ -400,5 +419,13 @@ export default function SpotsPage() {
 
       </div>
     </div>
+  )
+}
+
+export default function SpotsPage() {
+  return (
+    <Suspense fallback={null}>
+      <SpotsPageInner />
+    </Suspense>
   )
 }

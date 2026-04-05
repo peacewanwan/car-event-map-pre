@@ -162,6 +162,9 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
   const [planDate, setPlanDate] = useState('')
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)
 
+  // ---- share ----
+  const [copied, setCopied] = useState(false)
+
   // ---- fetch checkins ----
   useEffect(() => {
     if (!isOpen) return
@@ -288,6 +291,24 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
     setPlanRefreshKey((k) => k + 1)
   }
 
+  // ---- share ----
+  async function handleShare(spotName: string) {
+    const text = `今${spotName}にいます🚗 #二輪四輪オフ会メーカー #オフ会`
+    const url = 'https://24offmap.jp/spots'
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: `${text}\n${url}` })
+      } catch {
+        // キャンセル時は何もしない
+      }
+    } else {
+      await navigator.clipboard.writeText(`${text}\n${url}`)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   // ---------- render ----------
 
   return (
@@ -396,12 +417,20 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
 
             <div className="border-t border-[var(--border-card)] pt-4 space-y-3">
               {alreadyCheckedIn ? (
-                <button
-                  onClick={handleCheckout}
-                  className="w-full py-3 rounded-xl border border-[var(--border-card)] text-[var(--text-sub)] text-sm hover:bg-[var(--bg-input)] transition-colors"
-                >
-                  退出する
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCheckout}
+                    className="flex-1 py-3 rounded-xl border border-[var(--border-card)] text-[var(--text-sub)] text-sm hover:bg-[var(--bg-input)] transition-colors"
+                  >
+                    退出する
+                  </button>
+                  <button
+                    onClick={() => handleShare(spot.name)}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-emerald-600/40 text-emerald-400 hover:bg-emerald-600/20 transition-colors"
+                  >
+                    {copied ? 'コピーしました✓' : '共有する'}
+                  </button>
+                </div>
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-2">
