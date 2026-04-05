@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import Link from "next/link";
 import { HelpCircle } from "lucide-react";
 
 // ---------- Types ----------
@@ -255,6 +255,7 @@ function RecurringCard({ ev }: { ev: RecurringEvent }) {
 // ---------- Main Page ----------
 
 export default function Home() {
+  const router = useRouter();
   const [tab, setTab] = useState<"events" | "recurring">("events");
 
   // データ
@@ -435,12 +436,6 @@ export default function Home() {
             2輪4輪 offmap
           </h1>
           <div className="flex items-center gap-2">
-            <Link
-              href="/spots"
-              className="text-sm font-medium px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 hover:bg-emerald-600/30 lg:bg-emerald-50 lg:text-emerald-700 lg:border-emerald-200 lg:hover:bg-emerald-100 transition-colors flex-shrink-0"
-            >
-              オフ会メーカー
-            </Link>
             <button
               onClick={() => { setModalOpen(true); setSubmitResult(""); setSubmitError(""); }}
               className="text-sm font-medium px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500 hover:bg-emerald-500/10 lg:bg-emerald-50 lg:text-emerald-700 lg:border-emerald-200 lg:hover:bg-emerald-100 transition-colors flex-shrink-0"
@@ -465,7 +460,7 @@ export default function Home() {
           <h1 className="text-3xl font-black tracking-tight mb-2">
             2輪4輪 <span className="text-[var(--accent)]">offmap</span>
           </h1>
-          <p className="text-[var(--text-sub)] text-sm mb-5">はじめてのオフ会が、すぐ見つかる。</p>
+          <p className="text-[var(--text-sub)] text-sm mb-5">オフ会・イベントが すぐ見つかる。</p>
 
           <div className="flex flex-col items-center gap-1 text-sm text-slate-500 mb-6">
             <span>✓ 全国のイベントを自動収集</span>
@@ -473,18 +468,24 @@ export default function Home() {
             <span>✓ 無料</span>
           </div>
 
-          <button
-            onClick={() => setEntryModalOpen(true)}
-            className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 hover:bg-emerald-600/30 transition-colors"
-          >
-            今いる場所を共有する →
-          </button>
-          <button
-            onClick={() => setFilterOpen((v) => !v)}
-            className="lg:hidden inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-[var(--bg-input)] text-[var(--text-main)] border border-[var(--border-card)] hover:bg-[var(--bg-card)] transition-colors"
-          >
-            {filterOpen ? "🔼 絞り込みを閉じる" : "🔽 条件を絞り込む"}
-          </button>
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={() => setEntryModalOpen(true)}
+              className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 hover:bg-emerald-600/30 lg:bg-emerald-50 lg:text-emerald-700 lg:border-emerald-200 lg:hover:bg-emerald-100 transition-colors"
+            >
+              今いる場所を共有する →
+            </button>
+            <button
+              onClick={() => setFilterOpen((v) => !v)}
+              className={`inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg border transition-colors ${
+                filterOpen
+                  ? "bg-sky-600/30 text-sky-300 lg:text-sky-700 border-sky-500/50 lg:bg-sky-100 lg:border-sky-400"
+                  : "bg-sky-600/10 text-sky-400 lg:text-sky-700 border-sky-600/30 hover:bg-sky-600/20 lg:bg-sky-50 lg:border-sky-200 lg:hover:bg-sky-100"
+              }`}
+            >
+              🔽 条件からイベントを探す
+            </button>
+          </div>
 
           {lastUpdated && (
             <p className="text-xs text-slate-600 mt-3">最終更新：{lastUpdated}</p>
@@ -680,22 +681,25 @@ export default function Home() {
               </button>
             </div>
 
+            <p className="text-xs text-emerald-400">今いる場所でオフ会になるかも？</p>
+
             <button
               onClick={() => {
                 if (!navigator.geolocation) {
-                  window.location.href = '/spots';
+                  router.push('/spots');
                   return;
                 }
                 setGeoLoading(true);
                 navigator.geolocation.getCurrentPosition(
                   (pos) => {
                     setGeoLoading(false);
-                    window.location.href = `/spots?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`;
+                    router.push(`/spots?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
                   },
                   () => {
                     setGeoLoading(false);
-                    window.location.href = '/spots';
-                  }
+                    router.push('/spots');
+                  },
+                  { timeout: 10000 }
                 );
               }}
               disabled={geoLoading}
@@ -710,8 +714,8 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => { window.location.href = '/spots'; }}
-              className="w-full py-3 rounded-xl border border-[var(--border-card)] text-[var(--text-main)] text-sm hover:bg-[var(--bg-input)] transition-colors"
+              onClick={() => router.push('/spots')}
+              className="w-full py-3 rounded-xl border border-slate-600/50 text-slate-400 text-sm hover:bg-slate-800/30 transition-colors"
             >
               🗾 全国のスポットを見る
             </button>
