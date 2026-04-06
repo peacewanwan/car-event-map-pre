@@ -142,3 +142,42 @@ time_slot：`morning` / `afternoon` / `evening` / `flexible`
 - 取得率40〜50%の属性はサブDBとして許容
 - SNS API（X・Instagram・Facebook）はスコープ外
 - iOSアプリ化はCapacitor（PWAラップ）予定（チェックイン週30件超えてから）
+
+---
+
+## オーナー情報
+
+- **名前**：Takeo
+- **拠点**：八王子、東京
+- **役割**：sole developer & operator（自身もターゲットユーザー）
+
+---
+
+## AI活用スタイル
+
+| AI | 用途 |
+|---|---|
+| ChatGPT | ブレスト・評価 |
+| Gemini | リサーチ・リスト生成 |
+| Claude | 実装・深い継続作業 |
+
+**開発フロー**：Claude Code に一本化（壁打ちから実装まで完結）
+
+---
+
+## 作業スタイル
+
+- モバイルからの作業が多い（コンソールアクセス不可時）
+- GitHub Actions UI と Supabase SQL Editor をモバイルから操作
+- 自動化優先、手動作業は極力排除
+- 構造的思考、マーケより実装・構築を重視
+
+---
+
+## 知識管理システム
+
+- Obsidian Vault 構築済み（iCloud同期）
+- セッションまとめ自動保存：`~/Downloads/session-summary-*.md` → Obsidian/sessions/
+- project_knowledge 自動同期：`~/Downloads/project_knowledge_vol*.md` → リポジトリ + Obsidian
+- Claude Export 自動変換：`~/Downloads/data-*.zip` → Obsidian/chats/
+- post-commit フック：コミット時にソースコードを Obsidian/source/ へ自動同期
