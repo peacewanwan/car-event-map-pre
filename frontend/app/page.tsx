@@ -473,7 +473,7 @@ export default function Home() {
               onClick={() => setEntryModalOpen(true)}
               className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 hover:bg-emerald-600/30 lg:bg-emerald-50 lg:text-emerald-700 lg:border-emerald-200 lg:hover:bg-emerald-100 transition-colors"
             >
-              今いる場所を共有する →
+              今いる場所を共有する
             </button>
             <button
               onClick={() => setFilterOpen((v) => !v)}

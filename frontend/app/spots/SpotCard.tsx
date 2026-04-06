@@ -292,18 +292,19 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
   }
 
   // ---- share ----
-  async function handleShare(spotName: string) {
-    const text = `今${spotName}にいます🚗 #二輪四輪オフ会メーカー #オフ会`
+  async function handleShare() {
+    const text = `今${spot.name}にいます🚗 #二輪四輪オフ会メーカー #オフ会`
     const url = 'https://24offmap.jp/spots'
+    const shareText = `${text}\n${url}`
 
     if (navigator.share) {
       try {
-        await navigator.share({ text: `${text}\n${url}` })
+        await navigator.share({ text: shareText })
       } catch {
         // キャンセル時は何もしない
       }
     } else {
-      await navigator.clipboard.writeText(`${text}\n${url}`)
+      await navigator.clipboard.writeText(shareText)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
@@ -425,10 +426,10 @@ export default function SpotCard({ spot, nowCount, planCount, isOpen, onToggle, 
                     退出する
                   </button>
                   <button
-                    onClick={() => handleShare(spot.name)}
+                    onClick={handleShare}
                     className="text-xs px-3 py-1.5 rounded-lg border border-emerald-600/40 text-emerald-400 hover:bg-emerald-600/20 transition-colors"
                   >
-                    {copied ? 'コピーしました✓' : '共有する'}
+                    {copied ? 'コピーしました ✓' : '共有する'}
                   </button>
                 </div>
               ) : (

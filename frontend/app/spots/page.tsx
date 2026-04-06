@@ -286,6 +286,7 @@ function SpotsPageInner() {
 
       {/* ===== サブテキスト（モバイルのみ） ===== */}
       <div className="lg:hidden bg-gradient-to-b from-emerald-950/20 to-transparent px-4 py-6 text-center">
+        <p className="text-base font-bold text-emerald-400 mb-2">今いる場所で オフ会になるかも？</p>
         <p className="text-sm text-slate-400 leading-relaxed">
           今日はどこ行く？<br />
           誰かに会いに行く？誰かが来てくれるのを待つ？<br />
@@ -406,7 +407,7 @@ function SpotsPageInner() {
         <div className={`lg:flex-1 lg:h-full ${activeTab !== 'map' ? 'hidden lg:block' : 'h-[calc(100vh-120px)]'}`}>
           <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''}>
             <MapView
-              spots={spots}
+              spots={filteredSpots}
               nowCountMap={nowCountMap}
               focusSpotId={selectedSpotId ?? undefined}
               onSpotSelect={(spotId) => {
