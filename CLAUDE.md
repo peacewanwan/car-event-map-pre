@@ -1,5 +1,5 @@
 # CLAUDE.md — 二輪四輪オフマップ
-最終更新：2026年4月6日
+最終更新：2026年4月8日
 
 Claude Codeがこのリポジトリで作業する際の参照ドキュメント。
 
@@ -177,7 +177,43 @@ time_slot：`morning` / `afternoon` / `evening` / `flexible`
 ## 知識管理システム
 
 - Obsidian Vault 構築済み（iCloud同期）
-- セッションまとめ自動保存：`~/Downloads/session-summary-*.md` → Obsidian/sessions/
-- project_knowledge 自動同期：`~/Downloads/project_knowledge_vol*.md` → リポジトリ + Obsidian
-- Claude Export 自動変換：`~/Downloads/data-*.zip` → Obsidian/chats/
+- Vault パス：`~/Library/Mobile Documents/iCloud~md~obsidian/Documents/ObsidianVault/`
+- **注意**：macOS FinderからiCloudのObsidianコンテナは直接ブラウズ不可（Terminalからはアクセス可能）
+
+### Obsidian Vault 構成
+
+```
+ObsidianVault/
+├── 24offmap/
+│   ├── sessions/          ← セッションまとめ
+│   ├── chats/             ← Claude Export変換済み
+│   ├── note-articles/     ← note記事
+│   └── knowledge/         ← project_knowledge
+├── personal/
+├── Analysis/
+├── LLM Chats/
+├── MOC/
+└── _inbox/                ← 自動分類用（→ organize_vault.pyで振り分け）
+```
+
+### Downloads監視ウォッチャー（launchd常駐）
+
+| ウォッチャー | plist | 対象 | 保存先 |
+|---|---|---|---|
+| session-summary | `jp.24offmap.session-summary-watcher` | `session-summary-*.md` | Obsidian/sessions/ |
+| session-summary | 同上 | `note_article_*.md` | Obsidian/note-articles/ |
+| session-summary | 同上 | `project_knowledge_vol*.md` | リポジトリルート + Obsidian/knowledge/（両方） |
+| claude-export | `jp.24offmap.claude-export-watcher` | `data-*.zip` | Obsidian/chats/（MD変換後） |
+| inbox | `jp.24offmap.inbox-watcher` | `_inbox/*.md` | organize_vault.pyでキーワード分類→自動振り分け |
+
+### スクリプト一覧（~/scripts/）
+
+| スクリプト | 用途 |
+|---|---|
+| `watch_session_summary.sh` | Downloads監視（session/note/knowledge） |
+| `watch_claude_export.sh` | Downloads監視（Claude Export ZIP） |
+| `watch_inbox.sh` | Obsidian _inbox監視（iCloudマウント待ち付き） |
+| `convert_claude_export.py` | Claude Export JSON → Markdown変換 |
+| `organize_vault.py` | キーワード分類+NFC正規化（単ファイルモード対応） |
+
 - post-commit フック：コミット時にソースコードを Obsidian/source/ へ自動同期
