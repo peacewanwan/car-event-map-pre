@@ -11,7 +11,7 @@ Claude Codeがこのリポジトリで作業する際の参照ドキュメント
 
 1. 最新の `project_knowledge_vol*.md`（リポジトリルートに存在する場合）
 2. 最新のセッションまとめ：
-   `/Users/takeomba/Library/Mobile Documents/com~apple~CloudDocs/ObsidianVault/24offmap/sessions/`
+   `/Users/takeomba/Library/Mobile Documents/iCloud~md~obsidian/Documents/ObsidianVault/24offmap/sessions/`
    にある最新の `session-summary-*.md` を読む
 3. 上記が存在しない場合はこのCLAUDE.mdのみで作業する
 
