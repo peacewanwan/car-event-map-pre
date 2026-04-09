@@ -441,7 +441,7 @@ export default function Home() {
     <div className="min-h-screen bg-[var(--bg-page)] text-white lg:text-slate-900">
 
       {/* ===== ヘッダー ===== */}
-      <Header onSubmitEvent={() => { setModalOpen(true); setSubmitResult(""); setSubmitError(""); }} />
+      <Header />
 
       {/* ===== ヒーロー ===== */}
       <section className="relative overflow-hidden px-4 py-10 text-center">
@@ -462,12 +462,20 @@ export default function Home() {
             <span>✓ 無料</span>
           </div>
 
-          <button
-            onClick={() => setFilterOpen((v) => !v)}
-            className="inline-flex items-center gap-1.5 text-sm font-bold px-6 py-3 rounded-xl bg-[var(--accent)] text-white shadow-lg shadow-sky-500/25 hover:brightness-110 active:scale-[0.98] transition-all"
-          >
-            イベントを探す
-          </button>
+          <div className="flex flex-col items-center gap-3">
+            <button
+              onClick={() => setFilterOpen((v) => !v)}
+              className="inline-flex items-center gap-1.5 text-sm font-bold px-6 py-3 rounded-xl bg-[var(--accent)] text-white shadow-lg shadow-sky-500/25 hover:brightness-110 active:scale-[0.98] transition-all"
+            >
+              イベントを探す
+            </button>
+            <button
+              onClick={() => { setModalOpen(true); setSubmitResult(""); setSubmitError(""); }}
+              className="text-xs text-[var(--text-sub)] underline underline-offset-2 hover:text-[var(--text-main)] transition-colors"
+            >
+              イベント情報を投稿する
+            </button>
+          </div>
 
           {lastUpdated && (
             <p className="text-xs text-slate-600 mt-3">最終更新：{lastUpdated}</p>
