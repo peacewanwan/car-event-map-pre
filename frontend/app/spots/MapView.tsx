@@ -132,7 +132,7 @@ function PopupCheckinSection({ spot }: { spot: Spot }) {
 
   return (
     <div>
-      <p className="text-xs text-slate-500 font-medium tracking-wider mb-2">今いるナウ</p>
+      <p className="text-xs text-slate-500 font-medium tracking-wider mb-2">イマココ</p>
       {alreadyCheckedIn ? (
         <button
           onClick={handleCheckout}
@@ -163,7 +163,7 @@ function PopupCheckinSection({ spot }: { spot: Spot }) {
             disabled={!nickname.trim() || submitting}
             className="w-full py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-bold disabled:opacity-40 hover:bg-emerald-400 transition-colors"
           >
-            {submitting ? '登録中...' : 'ここにいるナウ 登録する'}
+            {submitting ? '登録中...' : 'イマココ 登録する'}
           </button>
         </div>
       )}
@@ -171,7 +171,7 @@ function PopupCheckinSection({ spot }: { spot: Spot }) {
   )
 }
 
-// ---------- 行く予定セクション ----------
+// ---------- 行くカモセクション ----------
 
 function PopupPlanSection({ spot }: { spot: Spot }) {
   const supabase = createClient()
@@ -231,7 +231,7 @@ function PopupPlanSection({ spot }: { spot: Spot }) {
 
   return (
     <div>
-      <p className="text-xs text-slate-500 font-medium tracking-wider mb-2">行く予定</p>
+      <p className="text-xs text-slate-500 font-medium tracking-wider mb-2">行くカモ</p>
       {alreadyPlanned ? (
         <button
           onClick={handleCancelPlan}
@@ -291,7 +291,7 @@ function PopupPlanSection({ spot }: { spot: Spot }) {
             disabled={!planNickname.trim() || !planDate || !selectedTimeSlot || submitting}
             className="w-full py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-bold disabled:opacity-40 hover:bg-emerald-400 transition-colors"
           >
-            {submitting ? '登録中...' : 'ここに行く 登録する'}
+            {submitting ? '登録中...' : '行くカモ 登録する'}
           </button>
         </div>
       )}
@@ -334,6 +334,16 @@ export default function MapView({ spots, nowCountMap, onSpotSelect, focusSpotId 
   const handleZoomChange = useCallback((zoom: number) => {
     setZoomLevel(zoom)
   }, [])
+
+  // フィルタ結果に地図をフィット
+  useEffect(() => {
+    if (!mapInstance || spots.length === 0) return
+    // focusSpotIdが指定されている時はそちらを優先
+    if (focusSpotId) return
+    const bounds = new google.maps.LatLngBounds()
+    spots.forEach((s) => bounds.extend({ lat: s.lat, lng: s.lng }))
+    mapInstance.fitBounds(bounds, { top: 60, bottom: 60, left: 40, right: 40 })
+  }, [mapInstance, spots, focusSpotId])
 
   // リスト→地図連携: focusSpotId変化時にpanTo＋ポップアップ表示
   useEffect(() => {
@@ -476,7 +486,7 @@ export default function MapView({ spots, nowCountMap, onSpotSelect, focusSpotId 
                   activeTab === tab ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-300'
                 }`}
               >
-                {tab === 'now' ? '🔴 今いるナウ' : '📅 行く予定'}
+                {tab === 'now' ? '🔴 イマココ' : '📅 行くカモ'}
                 {activeTab === tab && (
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400 rounded-full" />
                 )}

@@ -272,6 +272,7 @@ function SpotsPageInner() {
 
       {/* ===== サブテキスト（モバイルのみ） ===== */}
       <div className="lg:hidden bg-gradient-to-b from-emerald-950/20 to-transparent px-4 py-6 text-center">
+        <h2 className="text-lg font-black text-[var(--text-main)] mb-1">オフ会メーカー</h2>
         <p className="text-base font-bold text-emerald-400 mb-2">今いる場所で オフ会になるかも？</p>
         <p className="text-sm text-slate-400 leading-relaxed mb-3">
           今日はどこ行く？<br />

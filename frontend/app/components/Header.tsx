@@ -14,18 +14,18 @@ export default function Header({
 
   return (
     <header className="sticky top-0 z-30 bg-[var(--bg-header)]/80 backdrop-blur border-b border-[var(--border-card)]">
-      <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-3 py-2.5 flex items-center justify-between gap-2">
         {/* ロゴ */}
-        <Link href="/" className="text-base font-bold tracking-tight flex-shrink-0 flex items-baseline gap-1 hover:opacity-80 transition-opacity">
+        <Link href="/" className="text-sm font-bold tracking-tight flex-shrink-0 flex items-baseline gap-0.5 hover:opacity-80 transition-opacity">
           <span className="text-[var(--text-main)]">2輪4輪</span>
           <span className={isSpots ? 'text-emerald-400' : 'text-[var(--accent)]'}>offmap</span>
         </Link>
 
-        {/* ページ切り替えタブ（sm以上） */}
-        <nav className="hidden sm:flex items-center gap-1 bg-[var(--bg-input)] rounded-lg p-0.5">
+        {/* ページ切り替えタブ */}
+        <nav className="flex items-center gap-0.5 bg-[var(--bg-input)] rounded-lg p-0.5">
           <Link
             href="/"
-            className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
+            className={`text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors whitespace-nowrap ${
               !isSpots
                 ? 'bg-[var(--bg-card)] text-[var(--text-main)] shadow-sm'
                 : 'text-[var(--text-sub)] hover:text-[var(--text-main)]'
@@ -35,22 +35,22 @@ export default function Header({
           </Link>
           <Link
             href="/spots"
-            className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
+            className={`text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors whitespace-nowrap ${
               isSpots
                 ? 'bg-[var(--bg-card)] text-emerald-400 shadow-sm'
                 : 'text-[var(--text-sub)] hover:text-[var(--text-main)]'
             }`}
           >
-            オフ会メーカー
+            スポット
           </Link>
         </nav>
 
         {/* 右側アクション */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {onSubmitEvent && (
             <button
               onClick={onSubmitEvent}
-              className="text-sm font-medium px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500 hover:bg-emerald-500/10 lg:bg-emerald-50 lg:text-emerald-700 lg:border-emerald-200 lg:hover:bg-emerald-100 transition-colors flex-shrink-0"
+              className="text-xs font-medium px-2.5 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500 hover:bg-emerald-500/10 lg:bg-emerald-50 lg:text-emerald-700 lg:border-emerald-200 lg:hover:bg-emerald-100 transition-colors flex-shrink-0"
             >
               イベント投稿
             </button>
@@ -60,7 +60,7 @@ export default function Header({
             className="text-[var(--text-sub)] hover:text-[var(--text-main)] transition-colors flex-shrink-0"
             title="よくある質問"
           >
-            <HelpCircle size={18} />
+            <HelpCircle size={16} />
           </a>
         </div>
       </div>
