@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { HelpCircle } from "lucide-react";
+import Header from "./components/Header";
 
 // ---------- Types ----------
 
@@ -384,6 +384,17 @@ export default function Home() {
     return () => { if (logTimerRef.current) clearTimeout(logTimerRef.current); };
   }, [freeword, vehicle, prefecture, category, dateFrom, dateTo, filteredEvents.length, isFiltered]);
 
+  // ---------- CustomEvent: open-submit-modal ----------
+  useEffect(() => {
+    function handler() {
+      setModalOpen(true);
+      setSubmitResult("");
+      setSubmitError("");
+    }
+    window.addEventListener("open-submit-modal", handler);
+    return () => window.removeEventListener("open-submit-modal", handler);
+  }, []);
+
   // ---------- ハンドラ ----------
 
   function handleReset() {
@@ -430,24 +441,7 @@ export default function Home() {
     <div className="min-h-screen bg-[var(--bg-page)] text-white lg:text-slate-900">
 
       {/* ===== ヘッダー ===== */}
-      <header className="sticky top-0 z-30 bg-[var(--bg-header)]/80 backdrop-blur border-b border-[var(--border-card)]">
-        <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <h1 className="text-base font-bold text-white lg:text-slate-900 tracking-tight flex-shrink-0">
-            2輪4輪 offmap
-          </h1>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => { setModalOpen(true); setSubmitResult(""); setSubmitError(""); }}
-              className="text-sm font-medium px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500 hover:bg-emerald-500/10 lg:bg-emerald-50 lg:text-emerald-700 lg:border-emerald-200 lg:hover:bg-emerald-100 transition-colors flex-shrink-0"
-            >
-              イベント投稿
-            </button>
-            <a href="/faq" className="text-slate-400 hover:text-slate-200 transition-colors flex-shrink-0" title="よくある質問">
-              <HelpCircle size={18} />
-            </a>
-          </div>
-        </div>
-      </header>
+      <Header onSubmitEvent={() => { setModalOpen(true); setSubmitResult(""); setSubmitError(""); }} />
 
       {/* ===== ヒーロー ===== */}
       <section className="relative overflow-hidden px-4 py-10 text-center">
@@ -462,30 +456,18 @@ export default function Home() {
           </h1>
           <p className="text-[var(--text-sub)] text-sm mb-5">オフ会・イベントが すぐ見つかる。</p>
 
-          <div className="flex flex-col items-center gap-1 text-sm text-slate-500 mb-6">
-            <span>✓ 全国のイベントを自動収集</span>
+          <div className="flex items-center justify-center gap-3 text-xs text-slate-500 mb-6">
+            <span>✓ 全国自動収集</span>
             <span>✓ SNS登録不要</span>
             <span>✓ 無料</span>
           </div>
 
-          <div className="flex flex-col items-center gap-2">
-            <button
-              onClick={() => setEntryModalOpen(true)}
-              className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 hover:bg-emerald-600/30 lg:bg-emerald-50 lg:text-emerald-700 lg:border-emerald-200 lg:hover:bg-emerald-100 transition-colors"
-            >
-              今いる場所を共有する
-            </button>
-            <button
-              onClick={() => setFilterOpen((v) => !v)}
-              className={`inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg border transition-colors ${
-                filterOpen
-                  ? "bg-sky-600/30 text-sky-300 lg:text-sky-700 border-sky-500/50 lg:bg-sky-100 lg:border-sky-400"
-                  : "bg-sky-600/10 text-sky-400 lg:text-sky-700 border-sky-600/30 hover:bg-sky-600/20 lg:bg-sky-50 lg:border-sky-200 lg:hover:bg-sky-100"
-              }`}
-            >
-              🔽 条件からイベントを探す
-            </button>
-          </div>
+          <button
+            onClick={() => setFilterOpen((v) => !v)}
+            className="inline-flex items-center gap-1.5 text-sm font-bold px-6 py-3 rounded-xl bg-[var(--accent)] text-white shadow-lg shadow-sky-500/25 hover:brightness-110 active:scale-[0.98] transition-all"
+          >
+            イベントを探す
+          </button>
 
           {lastUpdated && (
             <p className="text-xs text-slate-600 mt-3">最終更新：{lastUpdated}</p>

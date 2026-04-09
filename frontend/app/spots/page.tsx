@@ -4,8 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { APIProvider } from '@vis.gl/react-google-maps'
-import Link from 'next/link'
-import { HelpCircle } from 'lucide-react'
+import Header from '../components/Header'
 import SpotCard from './SpotCard'
 import MapView from './MapView'
 
@@ -185,8 +184,13 @@ function SpotsPageInner() {
       if (dist > 50) return false
     }
     if (prefFilter && s.prefecture !== prefFilter) return false
-    if (nowOnly && (nowCountMap[s.id] || 0) === 0) return false
-    if (planOnly && (planCountMap[s.id] || 0) === 0) return false
+    // nowOnly / planOnly: 両方ONならOR条件（どちらかに該当すればOK）
+    if (nowOnly && planOnly) {
+      if ((nowCountMap[s.id] || 0) === 0 && (planCountMap[s.id] || 0) === 0) return false
+    } else {
+      if (nowOnly && (nowCountMap[s.id] || 0) === 0) return false
+      if (planOnly && (planCountMap[s.id] || 0) === 0) return false
+    }
     if (nameFilter) {
       const q = nameFilter.toLowerCase()
       const matchesName = s.name?.toLowerCase().includes(q)
@@ -235,17 +239,17 @@ function SpotsPageInner() {
             </p>
             <div className="space-y-3">
               <div>
-                <p className="text-sm font-semibold text-[var(--text-main)]">🔴 今いるナウ</p>
+                <p className="text-sm font-semibold text-[var(--text-main)]">🔴 イマココ</p>
                 <p className="text-xs text-[var(--text-sub)] mt-1">
                   今その駐車場・スポットにいる人を表示<br />
-                  「ここにいるナウ」で自分も登録できる
+                  「イマココ」で自分も登録できる
                 </p>
               </div>
               <div>
-                <p className="text-sm font-semibold text-[var(--text-main)]">📅 行く予定</p>
+                <p className="text-sm font-semibold text-[var(--text-main)]">📅 行くカモ</p>
                 <p className="text-xs text-[var(--text-sub)] mt-1">
-                  カレンダーで予定日をタップすると<br />
-                  その日に行く予定の人が見られる
+                  行く予定を登録して<br />
+                  同じ日に行く予定の人を見つけよう
                 </p>
               </div>
               <div className="border-t border-[var(--border-card)] pt-3 space-y-1">
@@ -264,34 +268,22 @@ function SpotsPageInner() {
       )}
 
       {/* ===== ヘッダー（sticky） ===== */}
-      <header className="sticky top-0 z-30 bg-[var(--bg-header)]/90 backdrop-blur border-b border-[var(--border-card)]">
-        <div className="max-w-2xl lg:max-w-screen-xl mx-auto px-4 py-3 flex justify-between items-center">
-          <Link href="/" className="flex items-baseline gap-0.5 hover:opacity-80 transition-opacity">
-            <span className="text-xs font-bold text-[var(--text-sub)]">2輪4輪</span>
-            <span className="text-sm font-black text-emerald-400">オフ会メーカー</span>
-          </Link>
-          <div className="flex justify-end items-center gap-3">
-            <button
-              onClick={() => setHowToOpen(true)}
-              className="text-xs px-3 py-1.5 rounded-lg border border-emerald-600/40 text-emerald-400 hover:bg-emerald-600/20 transition-colors"
-            >
-              使い方
-            </button>
-            <a href="/faq" className="text-[var(--text-sub)] hover:text-[var(--text-main)] transition-colors" title="よくある質問">
-              <HelpCircle size={18} />
-            </a>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* ===== サブテキスト（モバイルのみ） ===== */}
       <div className="lg:hidden bg-gradient-to-b from-emerald-950/20 to-transparent px-4 py-6 text-center">
         <p className="text-base font-bold text-emerald-400 mb-2">今いる場所で オフ会になるかも？</p>
-        <p className="text-sm text-slate-400 leading-relaxed">
+        <p className="text-sm text-slate-400 leading-relaxed mb-3">
           今日はどこ行く？<br />
           誰かに会いに行く？誰かが来てくれるのを待つ？<br />
           <span className="text-slate-500">今いる場所・行く予定を共有して仲間を増やそう</span>
         </p>
+        <button
+          onClick={() => setHowToOpen(true)}
+          className="text-xs px-3 py-1.5 rounded-lg border border-emerald-600/40 text-emerald-400 hover:bg-emerald-600/20 transition-colors"
+        >
+          使い方
+        </button>
       </div>
 
       {/* ===== タブ（モバイルのみ・sticky） ===== */}
@@ -353,7 +345,7 @@ function SpotsPageInner() {
                       : 'bg-[var(--bg-input)] text-[var(--text-sub)] border-[var(--border-card)] hover:border-slate-500'
                   }`}
                 >
-                  🔴 今いる人あり
+                  🔴 イマココ有
                 </button>
                 <button
                   onClick={() => setPlanOnly((v) => !v)}
@@ -363,7 +355,7 @@ function SpotsPageInner() {
                       : 'bg-[var(--bg-input)] text-[var(--text-sub)] border-[var(--border-card)] hover:border-slate-500'
                   }`}
                 >
-                  📅 行く予定の人あり
+                  📅 予定有
                 </button>
                 <p className="text-xs text-slate-600">
                   {loading ? '読込中...' : `${filteredSpots.length}件`}
