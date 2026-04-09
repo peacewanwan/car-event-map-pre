@@ -20,4 +20,6 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python crawler/crawler.py
+        run: |
+          python crawler/crawler.py
+          python crawler/update_recurring_ids.py

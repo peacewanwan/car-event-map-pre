@@ -639,6 +639,31 @@ export default function Home() {
                 </button>
               </div>
             )}
+
+            {/* オフ会メーカー導線バナー */}
+            {!loading && filteredEvents.length > 0 && (
+              <div className="mt-6">
+                <a
+                  href="/spots"
+                  className="block rounded-xl border border-emerald-500/30 bg-emerald-950/20 lg:bg-emerald-50 px-5 py-4 hover:bg-emerald-950/30 lg:hover:bg-emerald-100 transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl flex-shrink-0">📍</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-emerald-400 lg:text-emerald-700 mb-0.5">
+                        オフ会メーカー
+                      </p>
+                      <p className="text-xs text-slate-400 lg:text-slate-600">
+                        近くのスポットを探して、今いる場所を共有しよう
+                      </p>
+                    </div>
+                    <span className="text-emerald-400/60 lg:text-emerald-600/60 group-hover:translate-x-0.5 transition-transform flex-shrink-0">
+                      →
+                    </span>
+                  </div>
+                </a>
+              </div>
+            )}
           </>
         )}
 
