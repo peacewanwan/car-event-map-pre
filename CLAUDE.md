@@ -1,5 +1,5 @@
 # CLAUDE.md — 二輪四輪オフマップ
-最終更新：2026年4月8日
+最終更新：2026年4月10日
 
 Claude Codeがこのリポジトリで作業する際の参照ドキュメント。
 
@@ -55,18 +55,20 @@ Claude Codeがこのリポジトリで作業する際の参照ドキュメント
 │   └── update_recurring_ids.py
 └── frontend/
     ├── app/
-    │   ├── page.tsx              ← トップページ
-    │   ├── layout.tsx
+    │   ├── page.tsx              ← トップページ（イベント一覧+定期開催）
+    │   ├── layout.tsx            ← lang="ja"
     │   ├── globals.css           ← テーマ定義（CSSカスタムプロパティ）
     │   ├── sitemap.ts
+    │   ├── components/
+    │   │   └── Header.tsx        ← 統一ヘッダー（全ページ共通）
     │   ├── admin/page.tsx
     │   ├── faq/page.tsx
     │   ├── contact/page.tsx
     │   ├── spots/
-    │   │   ├── page.tsx
+    │   │   ├── page.tsx          ← オフ会メーカー
     │   │   ├── layout.tsx
-    │   │   ├── SpotCard.tsx
-    │   │   └── MapView.tsx
+    │   │   ├── SpotCard.tsx      ← タブUI（イマココ/行くカモ）
+    │   │   └── MapView.tsx       ← フィルタ連動fitBounds
     │   └── api/
     │       ├── contact/route.ts
     │       └── submit-event/route.ts
@@ -122,6 +124,17 @@ time_slot：`morning` / `afternoon` / `evening` / `flexible`
 - トップページアクセント：sky-400（モバイル）/ sky-600（デスクトップ）
 - オフ会メーカーアクセント：emerald-400
 
+### UI設計の経緯（2026年4月）
+
+- **統一ヘッダー**：`Header.tsx` で全ページ共通化（ロゴ + イベント/スポット切替タブ + FAQ）
+- **Hero CTA**：「イベントを探す」1ボタンに集約。「イベント投稿」はヒーロー下に控えめリンクとして配置
+- **SpotCard**：旧アコーディオン全展開 → タブUI分離（イマココ / 行くカモ）。カレンダー廃止→シンプルリスト
+- **用語統一**：「今いるナウ」→「イマココ」、「行く予定」→「行くカモ」（全ページ・MapView含む）
+- **フィルター**：「イマココ有」「予定有」ボタンは両方ONでOR条件（どちらかに該当すればOK）
+- **地図連動**：フィルタ済みスポットにfitBoundsで地図表示エリアを自動調整
+- **V0レビュー活用**：UIデザイン評価はV0に投げて意見を取得。ただし実装判断はClaude側で開発経緯・ユーザー規模・優先度を踏まえて精査する（V0提案を鵜呑みにしない）
+- **現時点のV0スコア**：80/100（初回70→改修後80）
+
 ---
 
 ## コーディング規約・注意事項
@@ -160,6 +173,7 @@ time_slot：`morning` / `afternoon` / `evening` / `flexible`
 | ChatGPT | ブレスト・評価 |
 | Gemini | リサーチ・リスト生成 |
 | Claude | 実装・深い継続作業 |
+| V0 | UIデザインレビュー・改善提案（実装判断はClaude側で精査） |
 
 **開発フロー**：Claude Code に一本化（壁打ちから実装まで完結）
 
