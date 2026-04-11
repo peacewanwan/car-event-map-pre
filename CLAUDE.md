@@ -231,3 +231,23 @@ ObsidianVault/
 | `organize_vault.py` | キーワード分類+NFC正規化（単ファイルモード対応） |
 
 - post-commit フック：コミット時にソースコードを Obsidian/source/ へ自動同期
+
+---
+
+## 関連リポジトリ：MAGI EVOLVE SYSTEM（note記事生成パイプライン）
+
+オフマップの開発過程をnote記事として発信するためのパイプライン。
+
+- **リポジトリ**：`/Users/takeomba/Claude Agent/magi-evolve-system`
+- **GitHub**：https://github.com/peacewanwan/magi-evolve-system
+- **役割**：note.com記事の半自動生成（構想→執筆→推敲→投稿最適化）
+- **CLAUDE.md**：上記パスのCLAUDE.mdを参照
+
+### 関係性
+- オフマップの開発過程・学び・失敗談がnote記事のネタになる
+- noteの発信がオフマップの認知度向上に繋がる（note → X → 24offmap.jp）
+- NOTE_CONCEPT.md にアカウント全体のコンセプト定義あり
+- 記事の構想は `magi-evolve-system/NotePublishing/Ideas/` に置く
+- 開発中に気づいたことや記事ネタは、このリポジトリでの作業中でもメモしてIdeas/に残してよい
+- セッション中にmagi-evolve-system側のファイルを変更した場合、コミットはあちら側のリポジトリで行う
+- 作業開始時や状況が不明な場合は、両方のリポジトリのgit logを確認して最新状態を把握すること
