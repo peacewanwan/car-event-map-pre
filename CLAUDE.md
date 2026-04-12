@@ -1,5 +1,5 @@
 # CLAUDE.md — 二輪四輪オフマップ
-最終更新：2026年4月10日
+最終更新：2026年4月12日
 
 Claude Codeがこのリポジトリで作業する際の参照ドキュメント。
 
@@ -56,7 +56,7 @@ Claude Codeがこのリポジトリで作業する際の参照ドキュメント
 └── frontend/
     ├── app/
     │   ├── page.tsx              ← トップページ（イベント一覧+定期開催）
-    │   ├── layout.tsx            ← lang="ja"
+    │   ├── layout.tsx            ← lang="ja", OGP/Twitterカード設定
     │   ├── globals.css           ← テーマ定義（CSSカスタムプロパティ）
     │   ├── sitemap.ts
     │   ├── components/
@@ -134,6 +134,17 @@ time_slot：`morning` / `afternoon` / `evening` / `flexible`
 - **地図連動**：フィルタ済みスポットにfitBoundsで地図表示エリアを自動調整
 - **V0レビュー活用**：UIデザイン評価はV0に投げて意見を取得。ただし実装判断はClaude側で開発経緯・ユーザー規模・優先度を踏まえて精査する（V0提案を鵜呑みにしない）
 - **現時点のV0スコア**：80/100（初回70→改修後80）
+
+---
+
+## OGP / SNSカード設定
+
+- **設定場所**：`frontend/app/layout.tsx` の `metadata` export
+- **OG画像**：`frontend/public/og-image.jpg`（1200×630px推奨）
+- **対応プラットフォーム**：X（Twitter）、note、LINE、Discord、Slack、Facebook等
+- `og:title`、`og:description`、`og:image`、`twitter:card`（summary_large_image）を設定済み
+- OG画像を差し替える場合は `public/og-image.jpg` を上書きしてデプロイ
+- **注意**：X等はOGPキャッシュがあるため、画像変更後すぐに反映されない場合がある。[Card Validator](https://cards-dev.twitter.com/validator)でキャッシュクリア可能
 
 ---
 
